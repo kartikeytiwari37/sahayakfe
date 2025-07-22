@@ -194,7 +194,7 @@ function App() {
         scriptProcessor,
         stream,
         source,
-        isStreamingActive, 
+        isStreamingActive,
         stop: () => {
           isStreamingActive = false;
           
@@ -260,7 +260,12 @@ function App() {
 
   const startScreenShare = async () => {
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      // Get screen + audio stream (like Live API console)
+      const stream = await navigator.mediaDevices.getDisplayMedia({ 
+        video: true,
+        audio: true // Include system audio
+      });
+      
       streamRef.current = stream;
       
       if (videoRef.current) {
@@ -268,38 +273,133 @@ function App() {
       }
       
       setIsScreenSharing(true);
-      addMessage('system', 'Screen sharing started');
+      addMessage('system', 'Screen sharing with audio started - continuous streaming!');
       
-      // Send video frames periodically
-      const sendVideoFrame = () => {
-        if (!isScreenSharing || !canvasRef.current || !videoRef.current) return;
+      // Start continuous audio streaming if not already started
+      if (!isRecording) {
+        await startRecording();
+      }
+      
+      // Continuous video frame streaming with detailed debugging
+      const sendVideoFrameContinuously = () => {
+        console.log('🔍 sendVideoFrameContinuously called');
+        
+        // Check if stream is still active (more reliable than state)
+        const isStreamActive = streamRef.current && streamRef.current.active;
+        console.log('🔍 streamRef.current.active:', isStreamActive);
+        console.log('🔍 isScreenSharing (state):', isScreenSharing);
+        console.log('🔍 canvasRef.current:', !!canvasRef.current);
+        console.log('🔍 videoRef.current:', !!videoRef.current);
+        console.log('🔍 streamRef.current:', !!streamRef.current);
+        console.log('🔍 connected:', connected);
+        console.log('🔍 socketRef.current:', !!socketRef.current);
+        
+        // Use stream active state instead of React state (fixes closure issue)
+        if (!isStreamActive || !canvasRef.current || !videoRef.current || !streamRef.current) {
+          console.log('❌ Stopping video streaming - stream inactive or refs missing');
+          return;
+        }
         
         const canvas = canvasRef.current;
         const video = videoRef.current;
         const ctx = canvas.getContext('2d');
         
-        canvas.width = video.videoWidth * 0.5;
-        canvas.height = video.videoHeight * 0.5;
+        console.log('🔍 video.videoWidth:', video.videoWidth);
+        console.log('🔍 video.videoHeight:', video.videoHeight);
         
-        if (canvas.width > 0 && canvas.height > 0) {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const base64Image = canvas.toDataURL('image/jpeg', 0.8);
-          
-          if (connected && socketRef.current) {
-            const message = {
-              type: 'video',
-              data: base64Image.split(',')[1] // Remove data:image/jpeg;base64, prefix
-            };
-            socketRef.current.send(JSON.stringify(message));
-          }
+        // Validate video dimensions before processing
+        if (video.videoWidth === 0 || video.videoHeight === 0) {
+          console.log('❌ Video not ready, skipping frame');
+          return;
         }
         
-        setTimeout(sendVideoFrame, 2000); // Send frame every 2 seconds
+        // Set canvas size exactly like Live API console
+        canvas.width = video.videoWidth * 0.25;
+        canvas.height = video.videoHeight * 0.25;
+        
+        console.log('🔍 canvas.width:', canvas.width);
+        console.log('🔍 canvas.height:', canvas.height);
+        
+        if (canvas.width > 0 && canvas.height > 0) {
+          try {
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const base64Image = canvas.toDataURL('image/jpeg', 1.0); // Max quality like Live API console
+            
+            // Extract base64 data (remove data:image/jpeg;base64, prefix)
+            const data = base64Image.slice(base64Image.indexOf(",") + 1, Infinity);
+            
+            console.log('🔍 data.length:', data.length);
+            console.log('🔍 data && data.length > 1000:', data && data.length > 1000);
+            console.log('🔍 connected:', connected);
+            console.log('🔍 socketRef.current:', !!socketRef.current);
+            
+            // Validate base64 image before sending
+            if (data && data.length > 1000 && connected && socketRef.current) {
+              const message = {
+                type: 'video',
+                data: data // Send clean base64 data like Live API console
+              };
+              socketRef.current.send(JSON.stringify(message));
+              console.log('✅ Sending video frame (Live API format), size:', data.length, 'dimensions:', canvas.width, 'x', canvas.height);
+            } else {
+              console.log('❌ Invalid video frame, skipping - data.length:', data?.length, 'connected:', connected, 'socket:', !!socketRef.current);
+            }
+          } catch (error) {
+            console.error('❌ Error capturing video frame:', error);
+          }
+        } else {
+          console.log('❌ Canvas dimensions invalid:', canvas.width, 'x', canvas.height);
+        }
       };
       
-      // Start sending frames after video loads
-      videoRef.current.onloadedmetadata = () => {
-        sendVideoFrame();
+      // Debug video loading and start frame streaming
+      console.log('🔍 Setting up video loading handlers');
+      console.log('🔍 videoRef.current:', !!videoRef.current);
+      
+      // Start frame streaming exactly like Live API console (requestAnimationFrame + setTimeout)
+      console.log('🔄 Starting frame streaming like Live API console');
+      
+      let timeoutId = -1;
+      const sendVideoFrame = () => {
+        sendVideoFrameContinuously();
+        if (connected && streamRef.current && streamRef.current.active) {
+          timeoutId = window.setTimeout(sendVideoFrame, 1000 / 0.5); // 2000ms like Live API console
+        }
+      };
+      
+      // Start with requestAnimationFrame like Live API console
+      requestAnimationFrame(sendVideoFrame);
+      
+      // Store timeout reference for cleanup
+      streamRef.current.frameTimeout = timeoutId;
+      
+      if (videoRef.current) {
+        // Add event listeners for debugging (but don't rely on them)
+        videoRef.current.onloadedmetadata = () => {
+          console.log('✅ Video onloadedmetadata fired');
+        };
+        
+        videoRef.current.onloadeddata = () => {
+          console.log('✅ Video onloadeddata fired');
+        };
+        
+        videoRef.current.oncanplay = () => {
+          console.log('✅ Video oncanplay fired');
+        };
+        
+        videoRef.current.onplay = () => {
+          console.log('✅ Video onplay fired');
+        };
+        
+        console.log('🔍 Video event listeners set up');
+      } else {
+        console.log('❌ videoRef.current is null!');
+      }
+      
+      // Handle stream end
+      stream.getVideoTracks()[0].onended = () => {
+        console.log('Screen sharing ended by user');
+        stopScreenShare();
       };
       
     } catch (error) {
@@ -310,6 +410,11 @@ function App() {
 
   const stopScreenShare = () => {
     if (streamRef.current) {
+      // Clear the frame interval
+      if (streamRef.current.frameInterval) {
+        clearInterval(streamRef.current.frameInterval);
+      }
+      
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
@@ -320,6 +425,7 @@ function App() {
     
     setIsScreenSharing(false);
     addMessage('system', 'Screen sharing stopped');
+    console.log('Screen sharing and continuous frame streaming stopped');
   };
 
   // Audio streaming setup
