@@ -138,24 +138,51 @@ function App() {
       recordingAudioContextRef.current = audioContext;
       analyserRef.current = analyser;
       
+      // Set recording state first
+      setIsRecording(true);
+      
       // Start volume monitoring
       monitorVolume();
       
-      // Create ScriptProcessorNode to capture raw PCM data
+      // Use ScriptProcessorNode for continuous PCM streaming (Gemini expects raw PCM)
       const scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
-      const audioChunks = [];
+      let audioBuffer = [];
+      const CHUNK_SIZE = 16000; // 1 second of audio at 16kHz
+      let isStreamingActive = true;
       
       scriptProcessor.onaudioprocess = (event) => {
+        if (!isStreamingActive) return;
+        
         const inputBuffer = event.inputBuffer;
         const inputData = inputBuffer.getChannelData(0);
         
-        // Convert float32 to int16 PCM
+        // Convert float32 to int16 PCM (Gemini format)
         const pcmData = new Int16Array(inputData.length);
         for (let i = 0; i < inputData.length; i++) {
           pcmData[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
         }
         
-        audioChunks.push(pcmData);
+        // Add to buffer
+        audioBuffer.push(...pcmData);
+        
+        // Send chunks continuously when buffer reaches threshold
+        if (audioBuffer.length >= CHUNK_SIZE) {
+          const chunkToSend = new Int16Array(audioBuffer.splice(0, CHUNK_SIZE));
+          
+          // Convert to base64 and send immediately
+          const uint8Array = new Uint8Array(chunkToSend.buffer);
+          const base64Audio = btoa(String.fromCharCode.apply(null, uint8Array));
+          
+          console.log('Sending PCM audio chunk, size:', base64Audio.length);
+          
+          if (connected && socketRef.current) {
+            const message = {
+              type: 'audio',
+              data: base64Audio
+            };
+            socketRef.current.send(JSON.stringify(message));
+          }
+        }
       };
       
       // Connect the audio processing chain
@@ -164,27 +191,26 @@ function App() {
       
       // Store references for cleanup
       mediaRecorderRef.current = {
+        scriptProcessor,
+        stream,
+        source,
+        isStreamingActive,
         stop: () => {
-          // Combine all PCM chunks
-          const totalLength = audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
-          const combinedPCM = new Int16Array(totalLength);
-          let offset = 0;
+          isStreamingActive = false;
           
-          for (const chunk of audioChunks) {
-            combinedPCM.set(chunk, offset);
-            offset += chunk.length;
-          }
-          
-          // Convert to base64
-          const uint8Array = new Uint8Array(combinedPCM.buffer);
-          const base64Audio = btoa(String.fromCharCode.apply(null, uint8Array));
-          
-          if (connected && socketRef.current) {
-            const message = {
-              type: 'audio',
-              data: base64Audio
-            };
-            socketRef.current.send(JSON.stringify(message));
+          // Send any remaining audio in buffer
+          if (audioBuffer.length > 0) {
+            const remainingChunk = new Int16Array(audioBuffer);
+            const uint8Array = new Uint8Array(remainingChunk.buffer);
+            const base64Audio = btoa(String.fromCharCode.apply(null, uint8Array));
+            
+            if (connected && socketRef.current) {
+              const message = {
+                type: 'audio',
+                data: base64Audio
+              };
+              socketRef.current.send(JSON.stringify(message));
+            }
           }
           
           // Cleanup
@@ -194,12 +220,13 @@ function App() {
         }
       };
       
-      setIsRecording(true);
-      addMessage('system', 'Recording started...');
+      addMessage('system', 'Continuous conversation started - speak anytime!');
+      console.log('Continuous audio streaming started');
       
     } catch (error) {
       console.error('Error starting recording:', error);
       addMessage('error', 'Failed to start recording');
+      setIsRecording(false);
     }
   };
 
@@ -427,7 +454,7 @@ function App() {
               disabled={!connected}
               className={`media-btn ${isRecording ? 'recording' : ''}`}
             >
-              {isRecording ? '🛑 Stop Recording' : '🎤 Start Recording'}
+              {isRecording ? '🛑 End Conversation' : '🎤 Start Conversation'}
             </button>
 
             <button
