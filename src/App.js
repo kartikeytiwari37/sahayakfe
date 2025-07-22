@@ -194,7 +194,7 @@ function App() {
         scriptProcessor,
         stream,
         source,
-        isStreamingActive,
+        isStreamingActive, 
         stop: () => {
           isStreamingActive = false;
           
