@@ -25,7 +25,7 @@ function App() {
     
     setConnecting(true);
     try {
-      const socket = new SockJS('http://localhost:8080/sahayak-teacher');
+      const socket = new SockJS('https://sahayak-backend-199913799544.us-central1.run.app/sahayak-teacher');
       
       socket.onopen = () => {
         console.log('Connected to Sahayak Teacher');
