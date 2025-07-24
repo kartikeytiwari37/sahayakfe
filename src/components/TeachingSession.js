@@ -54,20 +54,29 @@ function TeachingSession({ customPrompt, onBackToHome }) {
       
       socket.onopen = () => {
         console.log('Connected to Sahayak Teacher');
+        
+        // Send initialization message to create teacher session with custom prompt
+        const initMessage = {
+          type: 'init',
+          mode: 'teacher',
+          customPrompt: customPrompt || null
+        };
+        socket.send(JSON.stringify(initMessage));
+        
         setConnected(true);
         setConnecting(false);
         addMessage('system', 'Connected! Your AI teacher is ready with your custom requirements.');
         
-        // Send the custom prompt as the first message to set context
+        // Send the introduction request after session is created
         if (customPrompt) {
           setTimeout(() => {
             const setupMessage = {
               type: 'text',
-              data: `Please act as my teaching assistant with the following requirements: ${customPrompt}. Start by introducing yourself and asking how you can help me today.`
+              data: 'Please introduce yourself and ask how you can help me today.'
             };
             socket.send(JSON.stringify(setupMessage));
             addMessage('system', 'Custom teaching requirements applied successfully!');
-          }, 1000);
+          }, 2000); // Give more time for session creation
         }
       };
       

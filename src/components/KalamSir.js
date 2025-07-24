@@ -11,6 +11,7 @@ function KalamSir({ onBackToHome, onStartTeaching }) {
   const [isPromptReady, setIsPromptReady] = useState(false);
   const [currentStep, setCurrentStep] = useState('input'); // input, generating, ready
   const [currentAssistantMessage, setCurrentAssistantMessage] = useState(''); // For accumulating streaming response
+  const [isReceivingPrompt, setIsReceivingPrompt] = useState(false); // Track if we're receiving FINAL_PROMPT
 
   const promptSocketRef = useRef(null);
 
@@ -93,66 +94,106 @@ function KalamSir({ onBackToHome, onStartTeaching }) {
         if (data.subType === 'text') {
           const response = data.data;
           
-          // Accumulate streaming response
+          // Update accumulator and messages
           setCurrentAssistantMessage(prev => {
-            const newMessage = prev + response;
+            const newFullMessage = prev + response;
             
-            // Update the last assistant message in real-time
-            setPromptMessages(prevMessages => {
-              const messages = [...prevMessages];
-              const lastMessageIndex = messages.length - 1;
-              
-              if (lastMessageIndex >= 0 && messages[lastMessageIndex].type === 'assistant' && messages[lastMessageIndex].isStreaming) {
-                // Update existing streaming message
-                messages[lastMessageIndex] = {
-                  ...messages[lastMessageIndex],
-                  content: newMessage,
-                  timestamp: new Date().toLocaleTimeString()
-                };
-              } else {
-                // Create new streaming message
-                messages.push({
-                  id: Date.now() + Math.random(),
-                  type: 'assistant',
-                  content: newMessage,
-                  timestamp: new Date().toLocaleTimeString(),
-                  isStreaming: true
+            // Check if we're starting to receive FINAL_PROMPT
+            const isStartingPrompt = response === 'FINAL_PROMPT' || response.includes('FINAL_PROMPT');
+            const hasPrompt = newFullMessage.includes('FINAL_PROMPT');
+            
+            // If we have FINAL_PROMPT in the message
+            if (hasPrompt) {
+              // Check if we have a complete prompt
+              const promptMatch = newFullMessage.match(/FINAL_PROMPT:\s*(.*)/s);
+              if (promptMatch && promptMatch[1] && 
+                  (response.includes('\n') || response.endsWith('.') || response.endsWith('.\n'))) {
+                
+                const extractedPrompt = promptMatch[1].trim();
+                setGeneratedPrompt(extractedPrompt);
+                
+                // Get the content before FINAL_PROMPT
+                const messageBeforePrompt = newFullMessage.split('FINAL_PROMPT')[0].trim();
+                
+                // Update messages to show only the part before FINAL_PROMPT
+                setPromptMessages(prevMessages => {
+                  const messages = [...prevMessages];
+                  const lastMessageIndex = messages.length - 1;
+                  
+                  if (lastMessageIndex >= 0 && messages[lastMessageIndex].type === 'assistant') {
+                    messages[lastMessageIndex] = {
+                      ...messages[lastMessageIndex],
+                      content: messageBeforePrompt || 'Perfect! I\'ve created your teaching assistant.',
+                      isStreaming: false
+                    };
+                  } else if (messageBeforePrompt) {
+                    messages.push({
+                      id: Date.now() + Math.random(),
+                      type: 'assistant',
+                      content: messageBeforePrompt,
+                      timestamp: new Date().toLocaleTimeString(),
+                      isStreaming: false
+                    });
+                  }
+                  
+                  return messages;
                 });
+                
+                // Add system message and automatically transition
+                setTimeout(() => {
+                  addPromptMessage('system', '🎉 Perfect! Your teaching assistant is ready. Starting your teaching session...');
+                  
+                  // Auto-start the teaching session after a short delay
+                  setTimeout(() => {
+                    if (onStartTeaching) {
+                      onStartTeaching(extractedPrompt);
+                    }
+                  }, 2000);
+                }, 100);
+                
+                setIsPromptReady(true);
+                setCurrentStep('ready');
+                setIsReceivingPrompt(false);
+                
+                // Return empty string to reset accumulator
+                return '';
+              } else if (isStartingPrompt) {
+                // We're starting to receive FINAL_PROMPT, set the flag
+                setIsReceivingPrompt(true);
+                // Don't update UI
+                return newFullMessage;
+              } else {
+                // Still receiving FINAL_PROMPT parts, don't update UI
+                return newFullMessage;
               }
-              
-              return messages;
-            });
-            
-            return newMessage;
-          });
-          
-          // Check if this looks like a final prompt in the accumulated message
-          const fullMessage = currentAssistantMessage + response;
-          if (fullMessage.includes('FINAL_PROMPT:') || fullMessage.includes('Here is your teaching assistant prompt:') || fullMessage.includes('Perfect! Your teaching assistant is ready')) {
-            // Mark the message as complete
-            setPromptMessages(prevMessages => {
-              const messages = [...prevMessages];
-              const lastMessageIndex = messages.length - 1;
-              if (lastMessageIndex >= 0 && messages[lastMessageIndex].type === 'assistant') {
-                messages[lastMessageIndex].isStreaming = false;
-              }
-              return messages;
-            });
-            
-            const promptMatch = fullMessage.match(/FINAL_PROMPT:\s*(.*?)(?:\n|$)/s) || 
-                               fullMessage.match(/Here is your teaching assistant prompt:\s*(.*?)(?:\n|$)/s) ||
-                               [null, fullMessage];
-            
-            if (promptMatch && promptMatch[1]) {
-              setGeneratedPrompt(promptMatch[1].trim());
-              setIsPromptReady(true);
-              setCurrentStep('ready');
-              addPromptMessage('system', '🎉 Perfect! Your teaching assistant prompt is ready. You can now start your teaching session!');
+            } else {
+              // Normal streaming response - update UI
+              setPromptMessages(prevMessages => {
+                const messages = [...prevMessages];
+                const lastMessageIndex = messages.length - 1;
+                
+                if (lastMessageIndex >= 0 && messages[lastMessageIndex].type === 'assistant' && messages[lastMessageIndex].isStreaming) {
+                  messages[lastMessageIndex] = {
+                    ...messages[lastMessageIndex],
+                    content: newFullMessage,
+                    timestamp: new Date().toLocaleTimeString()
+                  };
+                } else {
+                  messages.push({
+                    id: Date.now() + Math.random(),
+                    type: 'assistant',
+                    content: newFullMessage,
+                    timestamp: new Date().toLocaleTimeString(),
+                    isStreaming: true
+                  });
+                }
+                
+                return messages;
+              });
             }
             
-            // Reset accumulator
-            setCurrentAssistantMessage('');
-          }
+            return newFullMessage;
+          });
         }
         break;
         
@@ -177,6 +218,20 @@ function KalamSir({ onBackToHome, onStartTeaching }) {
 
   const sendPromptMessage = () => {
     if (!promptInput.trim() || !promptCreatorConnected) return;
+    
+    // Reset the accumulator for new message
+    setCurrentAssistantMessage('');
+    setIsReceivingPrompt(false);
+    
+    // Mark any existing streaming message as complete
+    setPromptMessages(prevMessages => {
+      const messages = [...prevMessages];
+      const lastMessageIndex = messages.length - 1;
+      if (lastMessageIndex >= 0 && messages[lastMessageIndex].type === 'assistant' && messages[lastMessageIndex].isStreaming) {
+        messages[lastMessageIndex].isStreaming = false;
+      }
+      return messages;
+    });
     
     const message = {
       type: 'text',
