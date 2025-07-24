@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SockJS from 'sockjs-client';
 import './App.css';
+import ExamCreator from './ExamCreator';
 
 function App() {
+  const [currentPage, setCurrentPage] = useState('home');
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -491,6 +493,21 @@ function App() {
     });
   };
 
+  // Navigate to Exam Creator page
+  const navigateToExamCreator = () => {
+    setCurrentPage('examCreator');
+  };
+
+  // Navigate to Home page
+  const navigateToHome = () => {
+    setCurrentPage('home');
+  };
+
+  // Render based on current page
+  if (currentPage === 'examCreator') {
+    return <ExamCreator />;
+  }
+
   return (
     <div className="App">
       <header className="app-header">
@@ -569,6 +586,13 @@ function App() {
               className={`media-btn ${isScreenSharing ? 'sharing' : ''}`}
             >
               {isScreenSharing ? '📱 Stop Sharing' : '📺 Share Screen'}
+            </button>
+            
+            <button
+              onClick={navigateToExamCreator}
+              className="media-btn exam-creator-btn"
+            >
+              📝 Exam Creator
             </button>
           </div>
 

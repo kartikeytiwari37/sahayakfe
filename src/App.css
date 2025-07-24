@@ -300,6 +300,16 @@
   animation: pulse 1.5s infinite;
 }
 
+.media-btn.exam-creator-btn {
+  background: #9c27b0;
+}
+
+.media-btn.exam-creator-btn:hover:not(:disabled) {
+  background: #7b1fa2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(156, 39, 176, 0.4);
+}
+
 @keyframes pulse {
   0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
   70% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
