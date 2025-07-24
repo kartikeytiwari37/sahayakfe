@@ -1,55 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import HomePage from './components/HomePage';
-import KalamSir from './components/KalamSir';
-import TeachingSession from './components/TeachingSession';
-import './App.css';
+import SockJS from 'sockjs-client';
+import './TeachingSession.css';
 
-function App() {
-  const [currentView, setCurrentView] = useState('home'); // home, kalam-sir, teaching-session
-  const [customPrompt, setCustomPrompt] = useState('');
-
-  const handleSelectAgent = (agentId) => {
-    if (agentId === 'kalam-sir') {
-      setCurrentView('kalam-sir');
-    }
-  };
-
-  const handleBackToHome = () => {
-    setCurrentView('home');
-    setCustomPrompt('');
-  };
-
-  const handleStartTeaching = (generatedPrompt) => {
-    setCustomPrompt(generatedPrompt);
-    setCurrentView('teaching-session');
-  };
-
-  if (currentView === 'home') {
-    return <HomePage onSelectAgent={handleSelectAgent} />;
-  }
-
-  if (currentView === 'kalam-sir') {
-    return (
-      <KalamSir 
-        onBackToHome={handleBackToHome}
-        onStartTeaching={handleStartTeaching}
-      />
-    );
-  }
-
-  if (currentView === 'teaching-session') {
-    return (
-      <TeachingSession 
-        customPrompt={customPrompt}
-        onBackToHome={handleBackToHome}
-      />
-    );
-  }
-
-  return null;
-}
-
-function OldApp() {
+function TeachingSession({ customPrompt, onBackToHome }) {
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -57,6 +10,7 @@ function OldApp() {
   const [isRecording, setIsRecording] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [volume, setVolume] = useState(0);
+  const [currentTeacherMessage, setCurrentTeacherMessage] = useState(''); // For accumulating streaming response
   
   const socketRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -66,11 +20,35 @@ function OldApp() {
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
 
-  // Connect to WebSocket
+  // Audio streaming setup
+  const audioContextRef = useRef(null);
+  const nextPlayTimeRef = useRef(0);
+
+  useEffect(() => {
+    // Auto-connect when component mounts
+    connectToTeacher();
+    
+    return () => {
+      cleanup();
+    };
+  }, []);
+
+  const cleanup = () => {
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+    stopRecording();
+    stopScreenShare();
+  };
+
+  // Connect to WebSocket with custom prompt
   const connectToTeacher = async () => {
     if (connecting || connected) return;
     
     setConnecting(true);
+    addMessage('system', 'Connecting to your personalized AI teacher...');
+    
     try {
       const socket = new SockJS('http://localhost:8080/sahayak-teacher');
       
@@ -78,7 +56,19 @@ function OldApp() {
         console.log('Connected to Sahayak Teacher');
         setConnected(true);
         setConnecting(false);
-        addMessage('system', 'Connected to AI Teacher');
+        addMessage('system', 'Connected! Your AI teacher is ready with your custom requirements.');
+        
+        // Send the custom prompt as the first message to set context
+        if (customPrompt) {
+          setTimeout(() => {
+            const setupMessage = {
+              type: 'text',
+              data: `Please act as my teaching assistant with the following requirements: ${customPrompt}. Start by introducing yourself and asking how you can help me today.`
+            };
+            socket.send(JSON.stringify(setupMessage));
+            addMessage('system', 'Custom teaching requirements applied successfully!');
+          }, 1000);
+        }
       };
       
       socket.onmessage = (event) => {
@@ -107,15 +97,6 @@ function OldApp() {
     }
   };
 
-  const disconnect = () => {
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
-    }
-    stopRecording();
-    stopScreenShare();
-  };
-
   const handleServerMessage = (data) => {
     console.log('Received message:', data);
     
@@ -136,7 +117,40 @@ function OldApp() {
         
       case 'content':
         if (data.subType === 'text') {
-          addMessage('teacher', data.data);
+          const response = data.data;
+          
+          // Accumulate streaming response
+          setCurrentTeacherMessage(prev => {
+            const newMessage = prev + response;
+            
+            // Update the last teacher message in real-time
+            setMessages(prevMessages => {
+              const messages = [...prevMessages];
+              const lastMessageIndex = messages.length - 1;
+              
+              if (lastMessageIndex >= 0 && messages[lastMessageIndex].type === 'teacher' && messages[lastMessageIndex].isStreaming) {
+                // Update existing streaming message
+                messages[lastMessageIndex] = {
+                  ...messages[lastMessageIndex],
+                  content: newMessage,
+                  timestamp: new Date().toLocaleTimeString()
+                };
+              } else {
+                // Create new streaming message
+                messages.push({
+                  id: Date.now() + Math.random(),
+                  type: 'teacher',
+                  content: newMessage,
+                  timestamp: new Date().toLocaleTimeString(),
+                  isStreaming: true
+                });
+              }
+              
+              return messages;
+            });
+            
+            return newMessage;
+          });
         }
         break;
         
@@ -151,7 +165,7 @@ function OldApp() {
 
   const addMessage = (type, content) => {
     const message = {
-      id: Date.now(),
+      id: Date.now() + Math.random(),
       type,
       content,
       timestamp: new Date().toLocaleTimeString()
@@ -161,6 +175,19 @@ function OldApp() {
 
   const sendTextMessage = () => {
     if (!inputText.trim() || !connected) return;
+    
+    // Reset teacher message accumulator when sending new message
+    setCurrentTeacherMessage('');
+    
+    // Mark any existing streaming message as complete
+    setMessages(prevMessages => {
+      const messages = [...prevMessages];
+      const lastMessageIndex = messages.length - 1;
+      if (lastMessageIndex >= 0 && messages[lastMessageIndex].type === 'teacher' && messages[lastMessageIndex].isStreaming) {
+        messages[lastMessageIndex].isStreaming = false;
+      }
+      return messages;
+    });
     
     const message = {
       type: 'text',
@@ -185,16 +212,12 @@ function OldApp() {
       recordingAudioContextRef.current = audioContext;
       analyserRef.current = analyser;
       
-      // Set recording state first
       setIsRecording(true);
-      
-      // Start volume monitoring
       monitorVolume();
       
-      // Use ScriptProcessorNode for continuous PCM streaming (Gemini expects raw PCM)
       const scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
       let audioBuffer = [];
-      const CHUNK_SIZE = 16000; // 1 second of audio at 16kHz
+      const CHUNK_SIZE = 16000;
       let isStreamingActive = true;
       
       scriptProcessor.onaudioprocess = (event) => {
@@ -203,24 +226,17 @@ function OldApp() {
         const inputBuffer = event.inputBuffer;
         const inputData = inputBuffer.getChannelData(0);
         
-        // Convert float32 to int16 PCM (Gemini format)
         const pcmData = new Int16Array(inputData.length);
         for (let i = 0; i < inputData.length; i++) {
           pcmData[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
         }
         
-        // Add to buffer
         audioBuffer.push(...pcmData);
         
-        // Send chunks continuously when buffer reaches threshold
         if (audioBuffer.length >= CHUNK_SIZE) {
           const chunkToSend = new Int16Array(audioBuffer.splice(0, CHUNK_SIZE));
-          
-          // Convert to base64 and send immediately
           const uint8Array = new Uint8Array(chunkToSend.buffer);
           const base64Audio = btoa(String.fromCharCode.apply(null, uint8Array));
-          
-          console.log('Sending PCM audio chunk, size:', base64Audio.length);
           
           if (connected && socketRef.current) {
             const message = {
@@ -232,11 +248,9 @@ function OldApp() {
         }
       };
       
-      // Connect the audio processing chain
       source.connect(scriptProcessor);
       scriptProcessor.connect(audioContext.destination);
       
-      // Store references for cleanup
       mediaRecorderRef.current = {
         scriptProcessor,
         stream,
@@ -245,7 +259,6 @@ function OldApp() {
         stop: () => {
           isStreamingActive = false;
           
-          // Send any remaining audio in buffer
           if (audioBuffer.length > 0) {
             const remainingChunk = new Int16Array(audioBuffer);
             const uint8Array = new Uint8Array(remainingChunk.buffer);
@@ -260,15 +273,13 @@ function OldApp() {
             }
           }
           
-          // Cleanup
           scriptProcessor.disconnect();
           source.disconnect();
           stream.getTracks().forEach(track => track.stop());
         }
       };
       
-      addMessage('system', 'Continuous conversation started - speak anytime!');
-      console.log('Continuous audio streaming started');
+      addMessage('system', 'Voice conversation started - speak anytime!');
       
     } catch (error) {
       console.error('Error starting recording:', error);
@@ -283,7 +294,7 @@ function OldApp() {
       mediaRecorderRef.current = null;
       setIsRecording(false);
       setVolume(0);
-      addMessage('system', 'Recording stopped');
+      addMessage('system', 'Voice conversation stopped');
     }
   };
 
@@ -307,10 +318,9 @@ function OldApp() {
 
   const startScreenShare = async () => {
     try {
-      // Get screen + audio stream (like Live API console)
       const stream = await navigator.mediaDevices.getDisplayMedia({ 
         video: true,
-        audio: true // Include system audio
+        audio: true
       });
       
       streamRef.current = stream;
@@ -320,30 +330,16 @@ function OldApp() {
       }
       
       setIsScreenSharing(true);
-      addMessage('system', 'Screen sharing with audio started - continuous streaming!');
+      addMessage('system', 'Screen sharing started - your teacher can now see your screen!');
       
-      // Start continuous audio streaming if not already started
       if (!isRecording) {
         await startRecording();
       }
       
-      // Continuous video frame streaming with detailed debugging
       const sendVideoFrameContinuously = () => {
-        console.log('🔍 sendVideoFrameContinuously called');
-        
-        // Check if stream is still active (more reliable than state)
         const isStreamActive = streamRef.current && streamRef.current.active;
-        console.log('🔍 streamRef.current.active:', isStreamActive);
-        console.log('🔍 isScreenSharing (state):', isScreenSharing);
-        console.log('🔍 canvasRef.current:', !!canvasRef.current);
-        console.log('🔍 videoRef.current:', !!videoRef.current);
-        console.log('🔍 streamRef.current:', !!streamRef.current);
-        console.log('🔍 connected:', connected);
-        console.log('🔍 socketRef.current:', !!socketRef.current);
         
-        // Use stream active state instead of React state (fixes closure issue)
         if (!isStreamActive || !canvasRef.current || !videoRef.current || !streamRef.current) {
-          console.log('❌ Stopping video streaming - stream inactive or refs missing');
           return;
         }
         
@@ -351,101 +347,44 @@ function OldApp() {
         const video = videoRef.current;
         const ctx = canvas.getContext('2d');
         
-        console.log('🔍 video.videoWidth:', video.videoWidth);
-        console.log('🔍 video.videoHeight:', video.videoHeight);
-        
-        // Validate video dimensions before processing
         if (video.videoWidth === 0 || video.videoHeight === 0) {
-          console.log('❌ Video not ready, skipping frame');
           return;
         }
         
-        // Set canvas size exactly like Live API console
         canvas.width = video.videoWidth * 0.25;
         canvas.height = video.videoHeight * 0.25;
-        
-        console.log('🔍 canvas.width:', canvas.width);
-        console.log('🔍 canvas.height:', canvas.height);
         
         if (canvas.width > 0 && canvas.height > 0) {
           try {
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const base64Image = canvas.toDataURL('image/jpeg', 1.0); // Max quality like Live API console
-            
-            // Extract base64 data (remove data:image/jpeg;base64, prefix)
+            const base64Image = canvas.toDataURL('image/jpeg', 1.0);
             const data = base64Image.slice(base64Image.indexOf(",") + 1, Infinity);
             
-            console.log('🔍 data.length:', data.length);
-            console.log('🔍 data && data.length > 1000:', data && data.length > 1000);
-            console.log('🔍 connected:', connected);
-            console.log('🔍 socketRef.current:', !!socketRef.current);
-            
-            // Validate base64 image before sending
             if (data && data.length > 1000 && connected && socketRef.current) {
               const message = {
                 type: 'video',
-                data: data // Send clean base64 data like Live API console
+                data: data
               };
               socketRef.current.send(JSON.stringify(message));
-              console.log('✅ Sending video frame (Live API format), size:', data.length, 'dimensions:', canvas.width, 'x', canvas.height);
-            } else {
-              console.log('❌ Invalid video frame, skipping - data.length:', data?.length, 'connected:', connected, 'socket:', !!socketRef.current);
             }
           } catch (error) {
-            console.error('❌ Error capturing video frame:', error);
+            console.error('Error capturing video frame:', error);
           }
-        } else {
-          console.log('❌ Canvas dimensions invalid:', canvas.width, 'x', canvas.height);
         }
       };
-      
-      // Debug video loading and start frame streaming
-      console.log('🔍 Setting up video loading handlers');
-      console.log('🔍 videoRef.current:', !!videoRef.current);
-      
-      // Start frame streaming exactly like Live API console (requestAnimationFrame + setTimeout)
-      console.log('🔄 Starting frame streaming like Live API console');
       
       let timeoutId = -1;
       const sendVideoFrame = () => {
         sendVideoFrameContinuously();
         if (connected && streamRef.current && streamRef.current.active) {
-          timeoutId = window.setTimeout(sendVideoFrame, 1000 / 0.5); // 2000ms like Live API console
+          timeoutId = window.setTimeout(sendVideoFrame, 2000);
         }
       };
       
-      // Start with requestAnimationFrame like Live API console
       requestAnimationFrame(sendVideoFrame);
-      
-      // Store timeout reference for cleanup
       streamRef.current.frameTimeout = timeoutId;
       
-      if (videoRef.current) {
-        // Add event listeners for debugging (but don't rely on them)
-        videoRef.current.onloadedmetadata = () => {
-          console.log('✅ Video onloadedmetadata fired');
-        };
-        
-        videoRef.current.onloadeddata = () => {
-          console.log('✅ Video onloadeddata fired');
-        };
-        
-        videoRef.current.oncanplay = () => {
-          console.log('✅ Video oncanplay fired');
-        };
-        
-        videoRef.current.onplay = () => {
-          console.log('✅ Video onplay fired');
-        };
-        
-        console.log('🔍 Video event listeners set up');
-      } else {
-        console.log('❌ videoRef.current is null!');
-      }
-      
-      // Handle stream end
       stream.getVideoTracks()[0].onended = () => {
-        console.log('Screen sharing ended by user');
         stopScreenShare();
       };
       
@@ -457,9 +396,8 @@ function OldApp() {
 
   const stopScreenShare = () => {
     if (streamRef.current) {
-      // Clear the frame interval
-      if (streamRef.current.frameInterval) {
-        clearInterval(streamRef.current.frameInterval);
+      if (streamRef.current.frameTimeout) {
+        clearTimeout(streamRef.current.frameTimeout);
       }
       
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -472,14 +410,7 @@ function OldApp() {
     
     setIsScreenSharing(false);
     addMessage('system', 'Screen sharing stopped');
-    console.log('Screen sharing and continuous frame streaming stopped');
   };
-
-  // Audio streaming setup
-  const audioContextRef = useRef(null);
-  const audioQueueRef = useRef([]);
-  const isPlayingRef = useRef(false);
-  const nextPlayTimeRef = useRef(0);
 
   const initAudioContext = () => {
     if (!audioContextRef.current) {
@@ -500,28 +431,22 @@ function OldApp() {
         view[i] = audioData.charCodeAt(i);
       }
       
-      // Convert raw PCM data to AudioBuffer
       const pcmData = new Int16Array(arrayBuffer);
       const audioBuffer = audioContextRef.current.createBuffer(1, pcmData.length, 24000);
       const channelData = audioBuffer.getChannelData(0);
       
-      // Convert 16-bit PCM to float32 (-1 to 1 range)
       for (let i = 0; i < pcmData.length; i++) {
         channelData[i] = pcmData[i] / 32768.0;
       }
       
-      // Schedule audio to play seamlessly
       const source = audioContextRef.current.createBufferSource();
       source.buffer = audioBuffer;
       source.connect(audioContextRef.current.destination);
       
-      // Calculate when to start this chunk
       const now = audioContextRef.current.currentTime;
       const startTime = Math.max(now, nextPlayTimeRef.current);
       
       source.start(startTime);
-      
-      // Update next play time for seamless playback
       nextPlayTimeRef.current = startTime + audioBuffer.duration;
       
     } catch (error) {
@@ -529,29 +454,37 @@ function OldApp() {
     }
   };
 
-  const blobToBase64 = (blob) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
-
   return (
-    <div className="App">
-      <header className="app-header">
-        <h1>🎓 Sahayak - AI Teacher</h1>
+    <div className="teaching-session">
+      <div className="session-header">
+        <button className="back-button" onClick={onBackToHome}>
+          ← Back to Home
+        </button>
+        <div className="session-title">
+          <h1>🎓 Teaching Session</h1>
+          <p>Personalized AI Teacher</p>
+        </div>
         <div className="connection-status">
           {connected ? (
             <span className="status connected">● Connected</span>
+          ) : connecting ? (
+            <span className="status connecting">● Connecting...</span>
           ) : (
             <span className="status disconnected">● Disconnected</span>
           )}
         </div>
-      </header>
+      </div>
 
-      <main className="app-main">
+      {customPrompt && (
+        <div className="prompt-display">
+          <h3>🎯 Your Teaching Assistant:</h3>
+          <div className="prompt-content">
+            {customPrompt}
+          </div>
+        </div>
+      )}
+
+      <div className="session-content">
         <div className="chat-container">
           <div className="messages">
             {messages.map(message => (
@@ -575,7 +508,7 @@ function OldApp() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && sendTextMessage()}
-              placeholder="Ask your teacher a question..."
+              placeholder="Ask your personalized teacher a question..."
               disabled={!connected}
             />
             <button onClick={sendTextMessage} disabled={!connected || !inputText.trim()}>
@@ -585,29 +518,13 @@ function OldApp() {
         </div>
 
         <div className="controls">
-          <div className="connection-controls">
-            {!connected ? (
-              <button 
-                onClick={connectToTeacher} 
-                disabled={connecting}
-                className="connect-btn"
-              >
-                {connecting ? 'Connecting...' : 'Connect to Teacher'}
-              </button>
-            ) : (
-              <button onClick={disconnect} className="disconnect-btn">
-                Disconnect
-              </button>
-            )}
-          </div>
-
           <div className="media-controls">
             <button
               onClick={isRecording ? stopRecording : startRecording}
               disabled={!connected}
               className={`media-btn ${isRecording ? 'recording' : ''}`}
             >
-              {isRecording ? '🛑 End Conversation' : '🎤 Start Conversation'}
+              {isRecording ? '🛑 End Voice Chat' : '🎤 Start Voice Chat'}
             </button>
 
             <button
@@ -637,11 +554,12 @@ function OldApp() {
           autoPlay 
           muted 
           style={{ display: isScreenSharing ? 'block' : 'none', maxWidth: '300px' }}
+          className="screen-preview"
         />
         <canvas ref={canvasRef} style={{ display: 'none' }} />
-      </main>
+      </div>
     </div>
   );
 }
 
-export default App;
+export default TeachingSession;
