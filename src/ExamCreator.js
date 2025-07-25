@@ -20,6 +20,11 @@ function ExamCreator() {
   const getExamTypeFromResponse = (examData) => {
     if (!examData) return null;
     
+    // Check if it's explicitly set in the examType field
+    if (examData.examType === "SHORT_ANSWER") {
+      return "SHORT_ANSWER";
+    }
+    
     // Check if it's a True-False exam
     if (examData.examType === "True-False" || 
         (examData.questions && examData.questions.length > 0 && 
@@ -36,6 +41,14 @@ function ExamCreator() {
          examData.questions[0].options.length === 0 && 
          examData.questions[0].correctAnswer === "null")) {
       return "ESSAY";
+    }
+    
+    // Check if it's a Short Answer exam (options is null but answer is not True/False)
+    if (examData.questions && examData.questions.length > 0 && 
+        examData.questions[0].options === null && 
+        examData.questions[0].correctAnswer !== "True" && 
+        examData.questions[0].correctAnswer !== "False") {
+      return "SHORT_ANSWER";
     }
     
     // Default to multiple choice
@@ -374,6 +387,24 @@ function ExamCreator() {
                       <div className="essay-prompt">
                         <p>This is an essay question. Students should write a detailed response addressing the prompt above.</p>
                       </div>
+                      <div className="essay-answer correct">
+                        <div className="answer-label">Model Answer:</div>
+                        <div className="answer-text">{result.examData.questions[activeQuestion].correctAnswer}</div>
+                      </div>
+                    </div>
+                  ) : getExamTypeFromResponse(result.examData) === "SHORT_ANSWER" ? (
+                    // Short Answer question UI
+                    <div className="short-answer-question">
+                      <div className="short-answer-prompt">
+                        <p>This is a short answer question. Students should write a brief, specific response.</p>
+                      </div>
+                      <div className="short-answer correct">
+                        <div className="answer-label">Correct Answer:</div>
+                        <div className="answer-text">{result.examData.questions[activeQuestion].correctAnswer}</div>
+                      </div>
+                      <div className="answer-space">
+                        <div className="answer-line"></div>
+                      </div>
                     </div>
                   ) : (
                     // Multiple Choice question UI (default)
@@ -394,7 +425,9 @@ function ExamCreator() {
                   )}
                   
                   <div className="explanation-box">
-                    <div className="explanation-title">Explanation:</div>
+                    <div className="explanation-title">
+                      {getExamTypeFromResponse(result.examData) === "SHORT_ANSWER" ? "Marks Evaluation:" : "Explanation:"}
+                    </div>
                     <div className="explanation-content">
                       {result.examData.questions[activeQuestion].explanation.split('\n').map((line, i) => (
                         <div key={i}>{line}</div>
@@ -409,7 +442,7 @@ function ExamCreator() {
               <button 
                 className="download-button"
                 onClick={() => {
-                  // Create a new PDF document
+                  // Create a new PDF document - Student version (no answers)
                   const doc = new jsPDF();
                   
                   // Set initial position
@@ -457,10 +490,7 @@ function ExamCreator() {
                   doc.text('Questions:', margin, y);
                   y += 10;
                   
-                  // Define a green color for the checkmark
-                  const greenColor = [0, 0.5, 0, 1]; // RGBA: Green color
-                  
-                  // Process each question
+                  // Process each question - Student version (no answers)
                   result.examData.questions.forEach((question, index) => {
                     // Check if we need a new page
                     if (y > 250) {
@@ -480,8 +510,196 @@ function ExamCreator() {
                     doc.setFont(fontFamily, 'normal');
                     doc.setFontSize(11);
                     
+                    // Check if it's a Short Answer question
+                    if (result.examData.examType === "SHORT_ANSWER" || 
+                        (question.options === null && 
+                         question.correctAnswer !== "True" && 
+                         question.correctAnswer !== "False")) {
+                      // Short answer question - add 3 lines for student response
+                      doc.setFont(fontFamily, 'normal');
+                      const shortAnswerText = 'Answer:';
+                      doc.text(shortAnswerText, margin + 10, y);
+                      y += 10;
+                      
+                      // Add 3 lines for writing
+                      for (let i = 0; i < 3; i++) {
+                        doc.setDrawColor(200, 200, 200); // Light gray
+                        doc.line(margin + 10, y, pageWidth - margin, y);
+                        y += 10;
+                      }
+                    }
                     // Check if it's a True-False question
-                    if (question.options === null && (question.correctAnswer === "True" || question.correctAnswer === "False")) {
+                    else if (question.options === null && (question.correctAnswer === "True" || question.correctAnswer === "False")) {
+                      // True option - no checkmark for student version
+                      doc.text('A. True', margin + 10, y);
+                      y += 7;
+                      
+                      // False option - no checkmark for student version
+                      doc.text('B. False', margin + 10, y);
+                      y += 7;
+                    } else if (Array.isArray(question.options) && question.options.length === 0 && question.correctAnswer === "null") {
+                      // Essay question
+                      doc.setFont(fontFamily, 'normal');
+                      const essayText = 'This is an essay question. Write a detailed response below:';
+                      const wrappedEssayText = doc.splitTextToSize(essayText, textWidth - 10);
+                      doc.text(wrappedEssayText, margin + 10, y);
+                      y += wrappedEssayText.length * 7;
+                      
+                      // Add lines for writing
+                      for (let i = 0; i < 5; i++) {
+                        doc.setDrawColor(200, 200, 200); // Light gray
+                        doc.line(margin + 10, y + 5, pageWidth - margin, y + 5);
+                        y += 10;
+                      }
+                    } else if (question.options) {
+                      // Multiple choice question - no checkmarks for student version
+                      question.options.forEach((option, optIndex) => {
+                        // Check if we need a new page
+                        if (y > 270) {
+                          doc.addPage();
+                          y = 20;
+                        }
+                        
+                        const optionLetter = String.fromCharCode(65 + optIndex);
+                        
+                        // All options in the same font style with text wrapping - no checkmarks
+                        const optionText = `${optionLetter}. ${option}`;
+                        const wrappedOptionText = doc.splitTextToSize(optionText, textWidth - 10);
+                        doc.text(wrappedOptionText, margin + 10, y);
+                        y += wrappedOptionText.length * 7; // Adjust y position based on number of lines
+                      });
+                    }
+                    
+                    // Add space between questions
+                    y += 15;
+                  });
+                  
+                  // Save the PDF
+                  doc.save(`exam-sheet-${subject}-${new Date().toISOString().slice(0, 10)}.pdf`);
+                }}
+              >
+                Generate Exam Sheet
+              </button>
+              
+              <button 
+                className="download-button with-answers"
+                onClick={() => {
+                  // Create a new PDF document - Teacher version (with answers)
+                  const doc = new jsPDF();
+                  
+                  // Set initial position
+                  let y = 20;
+                  const pageWidth = doc.internal.pageSize.getWidth();
+                  const margin = 20;
+                  const textWidth = pageWidth - (margin * 2);
+                  
+                  // Set consistent font family throughout the document
+                  const fontFamily = 'helvetica';
+                  
+                  // Add title
+                  doc.setFontSize(16);
+                  doc.setFont(fontFamily, 'bold');
+                  const title = `${result.examData.subject} Exam - ${result.examData.gradeLevel} (WITH ANSWERS)`;
+                  doc.text(title, pageWidth / 2, y, { align: 'center' });
+                  y += 15;
+                  
+                  // Add exam info
+                  doc.setFontSize(12);
+                  doc.setFont(fontFamily, 'normal');
+                  doc.text(`Subject: ${result.examData.subject}`, margin, y);
+                  y += 8;
+                  doc.text(`Grade Level: ${result.examData.gradeLevel}`, margin, y);
+                  y += 8;
+                  // Display proper exam type name
+                  const examTypeDisplay = (() => {
+                    switch(result.examData.examType) {
+                      case 'MULTIPLE_CHOICE': return 'Multiple Choices';
+                      case 'TRUE_FALSE': return 'True/False';
+                      case 'SHORT_ANSWER': return 'Short Answer Questions';
+                      case 'ESSAY': return 'Essay Questions';
+                      case 'MIXED': return 'Mixed';
+                      default: return result.examData.examType;
+                    }
+                  })();
+                  doc.text(`Exam Type: ${examTypeDisplay}`, margin, y);
+                  y += 8;
+                  doc.text(`Number of Questions: ${result.examData.questions.length}`, margin, y);
+                  y += 15;
+                  
+                  // Add questions heading
+                  doc.setFontSize(14);
+                  doc.setFont(fontFamily, 'bold');
+                  doc.text('Questions:', margin, y);
+                  y += 10;
+                  
+                  // Define a green color for the checkmark
+                  const greenColor = [0, 0.5, 0, 1]; // RGBA: Green color
+                  
+                  // Process each question - Teacher version (with answers)
+                  result.examData.questions.forEach((question, index) => {
+                    // Check if we need a new page
+                    if (y > 250) {
+                      doc.addPage();
+                      y = 20;
+                    }
+                    
+                    // Question number and text with text wrapping
+                    doc.setFontSize(12);
+                    doc.setFont(fontFamily, 'bold');
+                    const questionText = `Question ${index + 1}: ${question.questionText}`;
+                    const wrappedQuestionText = doc.splitTextToSize(questionText, textWidth);
+                    doc.text(wrappedQuestionText, margin, y);
+                    y += wrappedQuestionText.length * 7; // Adjust y position based on number of lines
+                    
+                    // Options - consistent font for all options
+                    doc.setFont(fontFamily, 'normal');
+                    doc.setFontSize(11);
+                    
+                    // Check if it's a Short Answer question
+                    if (result.examData.examType === "SHORT_ANSWER" || 
+                        (question.options === null && 
+                         question.correctAnswer !== "True" && 
+                         question.correctAnswer !== "False")) {
+                      // Short answer question with answer
+                      doc.setFont(fontFamily, 'normal');
+                      
+                      // Show the correct answer
+                      doc.setFont(fontFamily, 'bold');
+                      const answerLabel = 'Answer: ';
+                      doc.text(answerLabel, margin + 10, y);
+                      
+                      // Display the answer with wrapping
+                      doc.setFont(fontFamily, 'normal');
+                      const answerText = question.correctAnswer;
+                      const wrappedAnswerText = doc.splitTextToSize(answerText, textWidth - margin - 10 - doc.getTextWidth(answerLabel));
+                      doc.text(wrappedAnswerText, margin + 10 + doc.getTextWidth(answerLabel), y);
+                      y += wrappedAnswerText.length * 7 + 5;
+                      
+                      // Marks Evaluation
+                      doc.setFontSize(11);
+                      doc.setFont(fontFamily, 'bold');
+                      doc.text('Marks Evaluation:', margin, y);
+                      y += 7;
+                      
+                      // Explanation with text wrapping
+                      doc.setFont(fontFamily, 'normal');
+                      const evaluationLines = question.explanation.split('\n');
+                      evaluationLines.forEach(line => {
+                        // Check if we need a new page
+                        if (y > 270) {
+                          doc.addPage();
+                          y = 20;
+                        }
+                        
+                        const wrappedLine = doc.splitTextToSize(line, textWidth - 10);
+                        doc.text(wrappedLine, margin + 10, y);
+                        y += wrappedLine.length * 7; // Adjust y position based on number of lines
+                      });
+                      
+                      y += 10; // Add space after evaluation
+                    }
+                    // Check if it's a True-False question
+                    else if (question.options === null && (question.correctAnswer === "True" || question.correctAnswer === "False")) {
                       // True option
                       const isTrueCorrect = question.correctAnswer === "True";
                       
@@ -519,6 +737,27 @@ function ExamCreator() {
                       // False option
                       doc.text('B. False', margin + 10, y);
                       y += 7;
+                      
+                      // Explanation
+                      doc.setFontSize(11);
+                      doc.setFont(fontFamily, 'bold');
+                      doc.text('Explanation:', margin, y);
+                      y += 7;
+                      
+                      // Explanation with text wrapping
+                      doc.setFont(fontFamily, 'normal');
+                      const explanationLines = question.explanation.split('\n');
+                      explanationLines.forEach(line => {
+                        // Check if we need a new page
+                        if (y > 270) {
+                          doc.addPage();
+                          y = 20;
+                        }
+                        
+                        const wrappedLine = doc.splitTextToSize(line, textWidth - 10);
+                        doc.text(wrappedLine, margin + 10, y);
+                        y += wrappedLine.length * 7; // Adjust y position based on number of lines
+                      });
                     } else if (Array.isArray(question.options) && question.options.length === 0 && question.correctAnswer === "null") {
                       // Essay question
                       doc.setFont(fontFamily, 'normal');
@@ -527,12 +766,26 @@ function ExamCreator() {
                       doc.text(wrappedEssayText, margin + 10, y);
                       y += wrappedEssayText.length * 7;
                       
-                      // Add lines for writing
-                      for (let i = 0; i < 5; i++) {
-                        doc.setDrawColor(200, 200, 200); // Light gray
-                        doc.line(margin + 10, y + 5, pageWidth - margin, y + 5);
-                        y += 10;
-                      }
+                      // Explanation
+                      doc.setFontSize(11);
+                      doc.setFont(fontFamily, 'bold');
+                      doc.text('Explanation:', margin, y);
+                      y += 7;
+                      
+                      // Explanation with text wrapping
+                      doc.setFont(fontFamily, 'normal');
+                      const explanationLines = question.explanation.split('\n');
+                      explanationLines.forEach(line => {
+                        // Check if we need a new page
+                        if (y > 270) {
+                          doc.addPage();
+                          y = 20;
+                        }
+                        
+                        const wrappedLine = doc.splitTextToSize(line, textWidth - 10);
+                        doc.text(wrappedLine, margin + 10, y);
+                        y += wrappedLine.length * 7; // Adjust y position based on number of lines
+                      });
                     } else if (question.options) {
                       // Multiple choice question
                       question.options.forEach((option, optIndex) => {
@@ -563,46 +816,39 @@ function ExamCreator() {
                         doc.text(wrappedOptionText, margin + 10, y);
                         y += wrappedOptionText.length * 7; // Adjust y position based on number of lines
                       });
-                    }
-                    
-                    // Check if we need a new page for explanation
-                    if (y > 250) {
-                      doc.addPage();
-                      y = 20;
-                    }
-                    
-                    // Explanation
-                    doc.setFontSize(11);
-                    doc.setFont(fontFamily, 'bold');
-                    doc.text('Explanation:', margin, y);
-                    y += 7;
-                    
-                    // Explanation with text wrapping
-                    doc.setFont(fontFamily, 'normal');
-                    const explanationLines = question.explanation.split('\n');
-                    explanationLines.forEach(line => {
-                      // Check if we need a new page
-                      if (y > 270) {
-                        doc.addPage();
-                        y = 20;
-                      }
                       
-                      const wrappedLine = doc.splitTextToSize(line, textWidth - 10);
-                      doc.text(wrappedLine, margin + 10, y);
-                      y += wrappedLine.length * 7; // Adjust y position based on number of lines
-                    });
+                      // Explanation
+                      doc.setFontSize(11);
+                      doc.setFont(fontFamily, 'bold');
+                      doc.text('Explanation:', margin, y);
+                      y += 7;
+                      
+                      // Explanation with text wrapping
+                      doc.setFont(fontFamily, 'normal');
+                      const explanationLines = question.explanation.split('\n');
+                      explanationLines.forEach(line => {
+                        // Check if we need a new page
+                        if (y > 270) {
+                          doc.addPage();
+                          y = 20;
+                        }
+                        
+                        const wrappedLine = doc.splitTextToSize(line, textWidth - 10);
+                        doc.text(wrappedLine, margin + 10, y);
+                        y += wrappedLine.length * 7; // Adjust y position based on number of lines
+                      });
+                    }
                     
                     // Add space between questions
-                    y += 10;
+                    y += 15;
                   });
                   
                   // Save the PDF
-                  doc.save(`exam-${subject}-${new Date().toISOString().slice(0, 10)}.pdf`);
+                  doc.save(`exam-sheet-with-answers-${subject}-${new Date().toISOString().slice(0, 10)}.pdf`);
                 }}
               >
-                Download Exam
+                Generate Exam Sheet with Answers
               </button>
-              
             </div>
           </div>
         )}
