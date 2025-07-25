@@ -234,6 +234,19 @@
   margin-bottom: 0.5rem;
 }
 
+.subsection-header {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 165, 0, 0.2);
+  border-left: 4px solid #ffa500;
+  border-radius: 5px;
+  color: #ffd700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
 .question-text {
   font-size: 1.2rem;
   font-weight: 500;
@@ -274,11 +287,17 @@
 }
 
 .essay-prompt {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
   font-style: italic;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: inline-block;
+  max-width: fit-content;
+  line-height: 1.1;
 }
 
 .essay-answer, .short-answer {
@@ -309,11 +328,17 @@
 }
 
 .short-answer-prompt {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 10px;
-  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
   font-style: italic;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: inline-block;
+  max-width: fit-content;
+  line-height: 1.1;
 }
 
 .answer-space {
@@ -544,5 +569,27 @@
   
   .explanation-content {
     color: black;
+  }
+  
+  .subsection-header {
+    background: #fff8e1;
+    color: #ff8f00;
+    border-left: 4px solid #ffa000;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+  }
+  
+  .short-answer-prompt,
+  .essay-prompt {
+    background: #f9f9f9;
+    color: #666;
+    border: 1px solid #ddd;
+    font-style: italic;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.8rem;
+    display: inline-block;
+    border-radius: 4px;
+    margin-bottom: 0.8rem;
   }
 }
