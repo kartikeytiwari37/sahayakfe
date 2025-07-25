@@ -141,14 +141,7 @@ function KalamSir({ onBackToHome, onStartTeaching }) {
                 
                 // Add system message and automatically transition
                 setTimeout(() => {
-                  addPromptMessage('system', '🎉 Perfect! Your teaching assistant is ready. Starting your teaching session...');
-                  
-                  // Auto-start the teaching session after a short delay
-                  setTimeout(() => {
-                    if (onStartTeaching) {
-                      onStartTeaching(extractedPrompt);
-                    }
-                  }, 2000);
+                  addPromptMessage('system', '🎉 Perfect! Your teaching assistant is ready. Click "Start Teaching Session" to begin!');
                 }, 100);
                 
                 setIsPromptReady(true);
@@ -263,55 +256,62 @@ function KalamSir({ onBackToHome, onStartTeaching }) {
   return (
     <div className="kalam-sir">
       <div className="kalam-header">
-        <button className="back-button" onClick={onBackToHome}>
+        <div className="kalam-info">
+          <div className="kalam-avatar">🚀</div>
+          <div className="kalam-details">
+            <h2>Kalam Sir</h2>
+            <p>Virtual Teaching Assistant Creator</p>
+          </div>
+        </div>
+        <button className="back-to-home-btn" onClick={onBackToHome}>
           ← Back to Home
         </button>
-        <div className="kalam-title">
-          <h1>🚀 Kalam Sir</h1>
-          <p>Virtual Teaching Assistant Creator</p>
-        </div>
-        <div className="connection-indicator">
-          <span className={`status ${promptCreatorConnected ? 'connected' : 'disconnected'}`}>
-            {promptCreatorConnected ? '● Connected' : '● Disconnected'}
-          </span>
-        </div>
       </div>
 
       <div className="kalam-content">
-        <div className="prompt-creator-section">
-          <div className="section-header">
-            <h2>📝 Describe Your Teaching Assistant</h2>
-            <div className="step-indicator">
-              <div className={`step ${currentStep === 'input' ? 'active' : currentStep === 'generating' || currentStep === 'ready' ? 'completed' : ''}`}>
+        <div className="prompt-creator-single">
+          <div className="prompt-header">
+            <h3>📝 Describe Your Teaching Assistant</h3>
+            <p>Tell me what kind of teaching assistant you need and I'll create it for you!</p>
+          </div>
+
+          <div className="form-group">
+            <label>Step Progress</label>
+            <div className="subject-tags">
+              <div className={`subject-tag ${currentStep === 'input' ? 'selected' : currentStep === 'generating' || currentStep === 'ready' ? 'selected' : ''}`}>
                 1. Describe
               </div>
-              <div className={`step ${currentStep === 'generating' ? 'active' : currentStep === 'ready' ? 'completed' : ''}`}>
+              <div className={`subject-tag ${currentStep === 'generating' ? 'selected' : currentStep === 'ready' ? 'selected' : ''}`}>
                 2. Generate
               </div>
-              <div className={`step ${currentStep === 'ready' ? 'active' : ''}`}>
+              <div className={`subject-tag ${currentStep === 'ready' ? 'selected' : ''}`}>
                 3. Ready
               </div>
             </div>
           </div>
 
-          <div className="chat-container">
-            <div className="messages">
+          <div className="form-group">
+            <label>Chat with Kalam Sir</label>
+            <div className="prompt-display">
               {promptMessages.map(message => (
-                <div key={message.id} className={`message ${message.type}`}>
-                  <div className="message-content">
+                <div key={message.id} className={`message-item ${message.type}`}>
+                  <div className="message-header">
                     <strong>
                       {message.type === 'teacher' ? 'You' : 
                        message.type === 'assistant' ? 'Kalam Sir' : 
                        message.type === 'system' ? 'System' : 'Error'}:
                     </strong>
-                    <span>{message.content}</span>
+                    <span className="message-time">{message.timestamp}</span>
                   </div>
-                  <div className="message-time">{message.timestamp}</div>
+                  <div className="message-text">{message.content}</div>
                 </div>
               ))}
             </div>
+          </div>
 
-            <div className="input-area">
+          <div className="form-group">
+            <label>Your Message</label>
+            <div className="input-group">
               <input
                 type="text"
                 value={promptInput}
@@ -323,7 +323,7 @@ function KalamSir({ onBackToHome, onStartTeaching }) {
               <button 
                 onClick={sendPromptMessage} 
                 disabled={!promptCreatorConnected || !promptInput.trim()}
-                className="send-button"
+                className="send-btn"
               >
                 Send
               </button>
@@ -331,8 +331,8 @@ function KalamSir({ onBackToHome, onStartTeaching }) {
           </div>
 
           {currentStep === 'input' && (
-            <div className="examples-section">
-              <h3>💡 Example Requests:</h3>
+            <div className="form-group">
+              <label>💡 Example Requests</label>
               <div className="examples-grid">
                 {exampleRequests.map((example, index) => (
                   <div 
@@ -346,42 +346,41 @@ function KalamSir({ onBackToHome, onStartTeaching }) {
               </div>
             </div>
           )}
-        </div>
 
-        {isPromptReady && (
-          <div className="generated-prompt-section">
-            <div className="section-header">
-              <h2>✨ Your Teaching Assistant is Ready!</h2>
-            </div>
+          <div className="form-actions">
+            {!promptCreatorConnected && (
+              <button 
+                className="generate-btn"
+                onClick={connectToPromptCreator}
+                disabled={promptCreatorConnecting}
+              >
+                {promptCreatorConnecting ? 'Connecting...' : 'Connect to Kalam Sir'}
+              </button>
+            )}
             
-            <div className="prompt-preview">
-              <h3>Generated Prompt:</h3>
-              <div className="prompt-content">
-                {generatedPrompt}
-              </div>
-            </div>
-
-            <div className="action-buttons">
-              <button 
-                className="start-teaching-button"
-                onClick={handleStartTeaching}
-              >
-                🎓 Start Teaching Session
-              </button>
-              <button 
-                className="modify-button"
-                onClick={() => {
-                  setIsPromptReady(false);
-                  setCurrentStep('input');
-                  setGeneratedPrompt('');
-                  addPromptMessage('system', 'Let\'s modify your teaching assistant. What changes would you like to make?');
-                }}
-              >
-                ✏️ Modify Requirements
-              </button>
-            </div>
+            {isPromptReady && (
+              <>
+                <button 
+                  className="start-session-btn"
+                  onClick={handleStartTeaching}
+                >
+                  🎓 Start Teaching Session
+                </button>
+                <button 
+                  className="generate-btn"
+                  onClick={() => {
+                    setIsPromptReady(false);
+                    setCurrentStep('input');
+                    setGeneratedPrompt('');
+                    addPromptMessage('system', 'Let\'s modify your teaching assistant. What changes would you like to make?');
+                  }}
+                >
+                  ✏️ Modify Requirements
+                </button>
+              </>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

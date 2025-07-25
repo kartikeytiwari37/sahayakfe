@@ -5,35 +5,43 @@ function HomePage({ onSelectAgent }) {
   const agents = [
     {
       id: 'kalam-sir',
-      name: 'Kalam Sir',
-      description: 'Virtual Teaching Assistant Creator',
-      icon: '🚀',
-      color: '#4CAF50',
-      status: 'Available'
+      name: '🚀 Kalam Sir',
+      description: 'Your friendly AI teacher who makes learning super fun!',
+      icon: '🤖',
+      color: '#8B7ED8',
+      status: 'Available',
+      subjects: ['Math', 'Science', 'English'],
+      character: '👨‍🚀'
     },
     {
-      id: 'exam-taker',
-      name: 'Exam Taker',
-      description: 'AI-Powered Examination System',
-      icon: '📝',
-      color: '#FF9800',
-      status: 'Coming Soon'
+      id: 'math-buddy',
+      name: '🔢 Math Buddy',
+      description: 'Makes numbers and equations as easy as 1-2-3!',
+      icon: '🧮',
+      color: '#FF8A95',
+      status: 'Coming Soon',
+      subjects: ['Addition', 'Subtraction', 'Geometry'],
+      character: '🤓'
     },
     {
-      id: 'evaluator',
-      name: 'Evaluator',
-      description: 'Intelligent Assessment Tool',
-      icon: '📊',
-      color: '#2196F3',
-      status: 'Coming Soon'
+      id: 'science-explorer',
+      name: '🔬 Science Explorer',
+      description: 'Discover amazing experiments and cool facts!',
+      icon: '⚗️',
+      color: '#81C784',
+      status: 'Coming Soon',
+      subjects: ['Physics', 'Chemistry', 'Biology'],
+      character: '👩‍🔬'
     },
     {
-      id: 'tutor',
-      name: 'Personal Tutor',
-      description: 'One-on-One Learning Assistant',
-      icon: '👨‍🏫',
-      color: '#9C27B0',
-      status: 'Coming Soon'
+      id: 'creative-artist',
+      name: '🎨 Creative Artist',
+      description: 'Express yourself through art, music, and stories!',
+      icon: '🖌️',
+      color: '#FFB74D',
+      status: 'Coming Soon',
+      subjects: ['Drawing', 'Music', 'Writing'],
+      character: '👩‍🎨'
     }
   ];
 
@@ -42,12 +50,12 @@ function HomePage({ onSelectAgent }) {
       <div className="hero-section">
         <div className="hero-content">
           <h1 className="hero-title">
-            <span className="gradient-text">Sahayak</span>
+            <span className="gradient-text">Let's learn with</span>
             <br />
-            Teaching Assistant
+            <span className="gradient-text">lots of fun!</span>
           </h1>
           <p className="hero-subtitle">
-            Empowering Education with AI-Powered Learning Companions
+            🌟 Learning with us will be fun and make you happy! 🌈
           </p>
           <div className="hero-stats">
             <div className="stat">
@@ -76,7 +84,7 @@ function HomePage({ onSelectAgent }) {
       </div>
 
       <div className="agents-section">
-        <h2 className="section-title">Choose Your Learning Companion</h2>
+        <h2 className="section-title">🎪 New course</h2>
         <div className="agents-grid">
           {agents.map(agent => (
             <div 
@@ -84,48 +92,47 @@ function HomePage({ onSelectAgent }) {
               className={`agent-card ${agent.status === 'Coming Soon' ? 'disabled' : ''}`}
               onClick={() => agent.status === 'Available' && onSelectAgent(agent.id)}
             >
+              <div className="agent-character">{agent.character}</div>
               <div className="agent-icon" style={{ backgroundColor: agent.color }}>
                 {agent.icon}
               </div>
               <h3 className="agent-name">{agent.name}</h3>
               <p className="agent-description">{agent.description}</p>
-              <div className={`agent-status ${agent.status.toLowerCase().replace(' ', '-')}`}>
-                {agent.status}
+              <div className="agent-subjects">
+                {agent.subjects.map((subject, index) => (
+                  <span key={index} className="subject-tag">{subject}</span>
+                ))}
               </div>
-              {agent.status === 'Available' && (
-                <div className="agent-features">
-                  <span className="feature">🎤 Voice Chat</span>
-                  <span className="feature">📺 Screen Share</span>
-                  <span className="feature">💬 Text Chat</span>
-                </div>
-              )}
+              <div className={`agent-status ${agent.status.toLowerCase().replace(' ', '-')}`}>
+                {agent.status === 'Available' ? '🎯 Join now' : '⏰ Coming Soon'}
+              </div>
             </div>
           ))}
         </div>
       </div>
 
       <div className="features-section">
-        <h2 className="section-title">Why Choose Sahayak?</h2>
+        <h2 className="section-title">🌟 Why kids love learning with us?</h2>
         <div className="features-grid">
           <div className="feature-card">
-            <div className="feature-icon">🎯</div>
-            <h3>Personalized Learning</h3>
-            <p>AI adapts to your learning style and pace for optimal education experience</p>
+            <div className="feature-icon">🎮</div>
+            <h3>Fun & Interactive</h3>
+            <p>Learning feels like playing your favorite games! 🎯</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">🌍</div>
-            <h3>Multilingual Support</h3>
-            <p>Learn in your preferred language with native accent support</p>
+            <div className="feature-icon">🤗</div>
+            <h3>Super Friendly</h3>
+            <p>Our AI teachers are always kind and patient with you! 💝</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">⚡</div>
-            <h3>Real-time Interaction</h3>
-            <p>Instant responses with voice, video, and screen sharing capabilities</p>
+            <div className="feature-icon">🏆</div>
+            <h3>Earn Rewards</h3>
+            <p>Get stars and badges when you learn new things! ⭐</p>
           </div>
           <div className="feature-card">
-            <div className="feature-icon">🔒</div>
-            <h3>Safe & Secure</h3>
-            <p>Your learning data is protected with enterprise-grade security</p>
+            <div className="feature-icon">🛡️</div>
+            <h3>Safe Space</h3>
+            <p>A secure place where you can learn and grow safely! 🌈</p>
           </div>
         </div>
       </div>

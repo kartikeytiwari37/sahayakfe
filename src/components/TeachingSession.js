@@ -670,150 +670,234 @@ function TeachingSession({ customPrompt, onBackToHome }) {
   return (
     <div className="teaching-session">
       <div className="session-header">
-        <button className="back-button" onClick={onBackToHome}>
-          ← Back to Home
-        </button>
-        <div className="session-title">
-          <h1>🎓 Teaching Session</h1>
-          <p>Personalized AI Teacher</p>
+        <div className="session-info">
+          <div className="teacher-avatar">🎓</div>
+          <div className="session-details">
+            <h2>Teaching Session</h2>
+            <p>Personalized AI Teacher</p>
+          </div>
         </div>
-        <div className="connection-status">
-          {connected ? (
-            <span className="status connected">● Connected</span>
-          ) : connecting ? (
-            <span className="status connecting">● Connecting...</span>
-          ) : (
-            <span className="status disconnected">● Disconnected</span>
-          )}
+        <div className="session-controls">
+          <button className="back-to-home-btn" onClick={onBackToHome}>
+            ← Back to Home
+          </button>
+          <div className="connection-status">
+            {connected ? (
+              <span className="status connected">● Connected</span>
+            ) : connecting ? (
+              <span className="status connecting">● Connecting...</span>
+            ) : (
+              <span className="status disconnected">● Disconnected</span>
+            )}
+          </div>
         </div>
       </div>
 
-      {customPrompt && (
-        <div className="prompt-display">
-          <h3>🎯 Your Teaching Assistant:</h3>
-          <div className="prompt-content">
-            {customPrompt}
-          </div>
-        </div>
-      )}
-
       <div className="session-content">
-        <div className="chat-container">
-          <div className="messages">
-            {messages.map(message => (
-              <div key={message.id} className={`message ${message.type}`}>
-                <div className="message-content">
-                  <strong>
-                    {message.type === 'student' ? 'You' : 
-                     message.type === 'teacher' ? 'AI Teacher' : 
-                     message.type === 'system' ? 'System' : 'Error'}:
-                  </strong>
-                  <span>{message.content}</span>
-                </div>
-                <div className="message-time">{message.timestamp}</div>
-              </div>
-            ))}
-          </div>
+        <div className="main-content">
+          <div className="chat-section">
+            <div className="chat-header">
+              <h3>💬 Chat with Your AI Teacher</h3>
+              <p>Ask questions, get explanations, and learn interactively</p>
+            </div>
 
-          <div className="input-area">
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendTextMessage()}
-              placeholder="Ask your personalized teacher a question..."
-              disabled={!connected}
-            />
-            <button onClick={sendTextMessage} disabled={!connected || !inputText.trim()}>
-              Send
-            </button>
+            <div className="messages-container">
+              {messages.map(message => (
+                <div key={message.id} className={`message ${message.type}`}>
+                  <div className="message-content">
+                    <strong>
+                      {message.type === 'student' ? 'You' : 
+                       message.type === 'teacher' ? 'AI Teacher' : 
+                       message.type === 'system' ? 'System' : 'Error'}:
+                    </strong>
+                    <span>{message.content}</span>
+                  </div>
+                  <div className="message-time">{message.timestamp}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="input-section">
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendTextMessage()}
+                placeholder="Ask your personalized teacher a question..."
+                disabled={!connected}
+              />
+              <button 
+                className="send-btn"
+                onClick={sendTextMessage} 
+                disabled={!connected || !inputText.trim()}
+              >
+                Send
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="controls">
-          <div className="media-controls">
-            <button
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={!connected}
-              className={`media-btn ${isRecording ? 'recording' : ''}`}
-            >
-              {isRecording ? '🛑 End Voice Chat' : '🎤 Start Voice Chat'}
-            </button>
+        <div className="controls-section">
+          <div className="connection-panel">
+            <h4>🎤 Voice & Screen</h4>
+            <div className="connection-buttons">
+              <button
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={!connected}
+                className={`connect-btn ${isRecording ? 'recording' : ''}`}
+              >
+                {isRecording ? '🛑 End Voice Chat' : '🎤 Start Voice Chat'}
+              </button>
 
-            <button
-              onClick={isScreenSharing ? stopScreenShare : startScreenShare}
-              disabled={!connected}
-              className={`media-btn ${isScreenSharing ? 'sharing' : ''}`}
-            >
-              {isScreenSharing ? '📱 Stop Sharing' : '📺 Share Screen'}
-            </button>
+              <button
+                onClick={isScreenSharing ? stopScreenShare : startScreenShare}
+                disabled={!connected}
+                className={`connect-btn ${isScreenSharing ? 'sharing' : ''}`}
+              >
+                {isScreenSharing ? '📱 Stop Sharing' : '📺 Share Screen'}
+              </button>
+            </div>
+          </div>
 
-            <button
-              onClick={generateVideo}
-              disabled={!connected || videoGeneration.isGenerating || chatHistory.length === 0}
-              className={`media-btn video-btn ${videoGeneration.isGenerating ? 'generating' : ''}`}
-            >
-              {videoGeneration.isGenerating ? '🎬 Generating...' : '🎬 Generate Video'}
-            </button>
+          <div className="media-panel">
+            <h4>🎬 Video Generation</h4>
+            <div className="media-controls">
+              <button
+                onClick={generateVideo}
+                disabled={!connected || videoGeneration.isGenerating || chatHistory.length === 0}
+                className={`media-btn ${videoGeneration.isGenerating ? 'generating' : ''}`}
+              >
+                {videoGeneration.isGenerating ? '🎬 Generating...' : '🎬 Generate Video'}
+              </button>
+            </div>
+
+            {videoGeneration.isGenerating && (
+              <div className="video-generation-progress">
+                <div className="progress-header">
+                  <span className="progress-title">Creating Educational Video</span>
+                  <span className="progress-percentage">{Math.round(videoGeneration.progress)}%</span>
+                </div>
+                <div className="progress-bar">
+                  <div 
+                    className="progress-fill" 
+                    style={{ width: `${videoGeneration.progress}%` }}
+                  ></div>
+                </div>
+                <div className="progress-status">
+                  {videoGeneration.status === 'generating-prompt' && 'Creating video prompt...'}
+                  {videoGeneration.status === 'generating-video' && 'Starting video generation...'}
+                  {videoGeneration.status === 'polling' && 'AI is creating your video...'}
+                  {videoGeneration.status === 'completed' && 'Finalizing video...'}
+                </div>
+              </div>
+            )}
+
+            {videoGeneration.error && (
+              <div className="error-message">
+                <div className="error-header">
+                  <span className="error-icon">❌</span>
+                  <span className="error-title">Video Generation Failed</span>
+                </div>
+                <div className="error-text">{videoGeneration.error}</div>
+                <button 
+                  className="media-btn"
+                  onClick={() => {
+                    resetVideoGeneration();
+                    generateVideo();
+                  }}
+                >
+                  🔄 Try Again
+                </button>
+              </div>
+            )}
           </div>
 
           {isRecording && (
-            <div className="volume-indicator">
-              <div className="volume-bar">
-                <div 
-                  className="volume-level" 
-                  style={{ width: `${volume * 100}%` }}
-                ></div>
+            <div className="volume-panel">
+              <h4>🔊 Voice Level</h4>
+              <div className="volume-indicator">
+                <div className="volume-bar">
+                  <div 
+                    className="volume-level" 
+                    style={{ width: `${volume * 100}%` }}
+                  ></div>
+                </div>
+                <span>Volume: {Math.round(volume * 100)}%</span>
               </div>
-              <span>Volume: {Math.round(volume * 100)}%</span>
             </div>
           )}
 
-          {videoGeneration.isGenerating && (
-            <div className="video-generation-progress">
-              <div className="progress-header">
-                <span className="progress-title">🎬 Generating Educational Video</span>
-                <span className="progress-percentage">{Math.round(videoGeneration.progress)}%</span>
+          {videoGeneration.videoUrl && (
+            <div className="video-panel">
+              <div className="video-header">
+                <h4>🎬 Video Ready!</h4>
+                <button 
+                  className="reset-video-btn"
+                  onClick={resetVideoGeneration}
+                  title="Generate new video"
+                >
+                  🔄
+                </button>
               </div>
-              <div className="progress-bar">
-                <div 
-                  className="progress-fill" 
-                  style={{ width: `${videoGeneration.progress}%` }}
-                ></div>
+              <div className="video-preview">
+                <div className="video-thumbnail">
+                  <div className="play-icon">▶️</div>
+                  <span>Educational Video Generated</span>
+                </div>
+                <button 
+                  className="watch-video-btn"
+                  onClick={() => setVideoGeneration(prev => ({ ...prev, showModal: true }))}
+                >
+                  🎬 Watch Video
+                </button>
               </div>
-              <div className="progress-status">
-                {videoGeneration.status === 'generating-prompt' && 'Creating video prompt...'}
-                {videoGeneration.status === 'generating-video' && 'Starting video generation...'}
-                {videoGeneration.status === 'polling' && 'AI is creating your video...'}
-                {videoGeneration.status === 'completed' && 'Finalizing video...'}
+              <div className="video-actions">
+                <a 
+                  href={videoGeneration.videoUrl} 
+                  download="educational-video.mp4"
+                  className="download-btn"
+                >
+                  📥 Download
+                </a>
               </div>
             </div>
           )}
         </div>
 
-        {videoGeneration.videoUrl && (
-          <div className="video-player-section">
-            <div className="video-header">
-              <h3>🎬 Generated Educational Video</h3>
+        <video 
+          ref={videoRef} 
+          autoPlay 
+          muted 
+          style={{ display: 'none' }}
+          className="screen-preview"
+        />
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+      </div>
+
+      {/* Video Modal */}
+      {videoGeneration.showModal && videoGeneration.videoUrl && (
+        <div className="video-modal-overlay" onClick={() => setVideoGeneration(prev => ({ ...prev, showModal: false }))}>
+          <div className="video-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="video-modal-header">
+              <h3>🎬 Educational Video</h3>
               <button 
-                className="reset-video-btn"
-                onClick={resetVideoGeneration}
-                title="Generate new video"
+                className="close-modal-btn"
+                onClick={() => setVideoGeneration(prev => ({ ...prev, showModal: false }))}
               >
-                🔄 New Video
+                ✕
               </button>
             </div>
-            <div className="video-player-container">
+            <div className="video-modal-content">
               <video 
                 controls 
-                className="generated-video"
+                autoPlay
+                className="modal-video"
                 src={videoGeneration.videoUrl}
-                poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='100%25' height='100%25' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='20' fill='%23666' text-anchor='middle' dy='.3em'%3E🎬 Educational Video%3C/text%3E%3C/svg%3E"
               >
                 Your browser does not support the video tag.
               </video>
             </div>
-            <div className="video-actions">
+            <div className="video-modal-actions">
               <a 
                 href={videoGeneration.videoUrl} 
                 download="educational-video.mp4"
@@ -821,38 +905,19 @@ function TeachingSession({ customPrompt, onBackToHome }) {
               >
                 📥 Download Video
               </a>
+              <button 
+                className="generate-btn"
+                onClick={() => {
+                  setVideoGeneration(prev => ({ ...prev, showModal: false }));
+                  resetVideoGeneration();
+                }}
+              >
+                🔄 Generate New Video
+              </button>
             </div>
           </div>
-        )}
-
-        {videoGeneration.error && (
-          <div className="video-error">
-            <div className="error-header">
-              <span className="error-icon">❌</span>
-              <span className="error-title">Video Generation Failed</span>
-            </div>
-            <div className="error-message">{videoGeneration.error}</div>
-            <button 
-              className="retry-btn"
-              onClick={() => {
-                resetVideoGeneration();
-                generateVideo();
-              }}
-            >
-              🔄 Try Again
-            </button>
-          </div>
-        )}
-
-        <video 
-          ref={videoRef} 
-          autoPlay 
-          muted 
-          style={{ display: isScreenSharing ? 'block' : 'none', maxWidth: '300px' }}
-          className="screen-preview"
-        />
-        <canvas ref={canvasRef} style={{ display: 'none' }} />
-      </div>
+        </div>
+      )}
     </div>
   );
 }
