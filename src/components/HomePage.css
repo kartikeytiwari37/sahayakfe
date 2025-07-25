@@ -266,6 +266,25 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
+.try-it-button {
+  background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+  color: white;
+  font-weight: bold;
+  padding: 0.5rem 1.2rem;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  border: none;
+  font-size: 0.9rem;
+}
+
+.try-it-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(45deg, #FF8E53, #FF6B6B);
+}
+
 /* Features Section */
 .features-section {
   padding: 4rem;

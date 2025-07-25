@@ -17,7 +17,7 @@ function HomePage({ onSelectAgent }) {
       description: 'AI-Powered Examination System',
       icon: '📝',
       color: '#FF9800',
-      status: 'Coming Soon'
+      status: 'Available'
     },
     {
       id: 'evaluator',
@@ -92,11 +92,16 @@ function HomePage({ onSelectAgent }) {
               <div className={`agent-status ${agent.status.toLowerCase().replace(' ', '-')}`}>
                 {agent.status}
               </div>
-              {agent.status === 'Available' && (
+              {agent.status === 'Available' && agent.id === 'kalam-sir' && (
                 <div className="agent-features">
                   <span className="feature">🎤 Voice Chat</span>
                   <span className="feature">📺 Screen Share</span>
                   <span className="feature">💬 Text Chat</span>
+                </div>
+              )}
+              {agent.status === 'Available' && agent.id === 'exam-taker' && (
+                <div className="agent-features">
+                  <span className="feature try-it-button" onClick={() => onSelectAgent(agent.id)}>🚀 Try it</span>
                 </div>
               )}
             </div>
