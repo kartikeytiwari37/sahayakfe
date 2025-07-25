@@ -16,6 +16,20 @@ function ExamCreator({ onBackToHome }) {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [activeQuestion, setActiveQuestion] = useState(0);
+  const [displayExplanation, setDisplayExplanation] = useState(false);
+
+  // Add event listener for toggleExplanation event
+  React.useEffect(() => {
+    const handleToggleExplanation = () => {
+      setDisplayExplanation(prev => !prev);
+    };
+    
+    window.addEventListener('toggleExplanation', handleToggleExplanation);
+    
+    return () => {
+      window.removeEventListener('toggleExplanation', handleToggleExplanation);
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -271,7 +285,8 @@ function ExamCreator({ onBackToHome }) {
             result={result} 
             activeQuestion={activeQuestion} 
             handleQuestionChange={handleQuestionChange} 
-            generateExamPDF={generateExamPDF} 
+            generateExamPDF={generateExamPDF}
+            displayExplanation={displayExplanation}
           />
         )}
       </main>

@@ -40,7 +40,7 @@ export const getExamTypeFromResponse = (examData) => {
 };
 
 // Component to render the exam result
-export const ExamResult = ({ result, activeQuestion, handleQuestionChange, generateExamPDF }) => {
+export const ExamResult = ({ result, activeQuestion, handleQuestionChange, generateExamPDF, displayExplanation }) => {
   if (!result) return null;
   
   return (
@@ -199,35 +199,47 @@ export const ExamResult = ({ result, activeQuestion, handleQuestionChange, gener
               }
             })()}
             
-            <div className="explanation-box">
-              <div className="explanation-title">
-                {(() => {
-                  // For MIXED exam type, use the question's type
-                  const questionType = result.examData.examType === "MIXED" 
-                    ? result.examData.questions[activeQuestion].questionType 
-                    : getExamTypeFromResponse(result.examData);
-                  
-                  return (questionType === "SHORT_ANSWER" || questionType === "ESSAY") 
-                    ? "Marks Evaluation:" 
-                    : "Explanation:";
-                })()}
+            {displayExplanation && (
+              <div className="explanation-box">
+                <div className="explanation-title">
+                  {(() => {
+                    // For MIXED exam type, use the question's type
+                    const questionType = result.examData.examType === "MIXED" 
+                      ? result.examData.questions[activeQuestion].questionType 
+                      : getExamTypeFromResponse(result.examData);
+                    
+                    return (questionType === "SHORT_ANSWER" || questionType === "ESSAY") 
+                      ? "Marks Evaluation:" 
+                      : "Explanation:";
+                  })()}
+                </div>
+                <div className="explanation-content">
+                  {result.examData.questions[activeQuestion].explanation.split('\n').map((line, i) => (
+                    <div key={i}>{line}</div>
+                  ))}
+                </div>
               </div>
-              <div className="explanation-content">
-                {result.examData.questions[activeQuestion].explanation.split('\n').map((line, i) => (
-                  <div key={i}>{line}</div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>
       
       <div className="result-actions">
+        <div className="explanation-toggle">
+          <label className="toggle-label">
+            <input
+              type="checkbox"
+              checked={displayExplanation}
+              onChange={() => window.dispatchEvent(new CustomEvent('toggleExplanation'))}
+            />
+            Show Explanations
+          </label>
+        </div>
         <button 
           className="download-button"
           onClick={() => {
             // Create a new PDF document - Student version (no answers)
-            generateExamPDF(result, result.examData.subject, false);
+            generateExamPDF(result, result.examData.subject, false, displayExplanation);
           }}
         >
           Generate Exam Sheet
@@ -237,7 +249,7 @@ export const ExamResult = ({ result, activeQuestion, handleQuestionChange, gener
           className="download-button with-answers"
           onClick={() => {
             // Create a new PDF document - Teacher version (with answers)
-            generateExamPDF(result, result.examData.subject, true);
+            generateExamPDF(result, result.examData.subject, true, displayExplanation);
           }}
         >
           Generate Exam Sheet with Answers

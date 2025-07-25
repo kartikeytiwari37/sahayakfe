@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 
 // Main PDF generation function
-export const generateExamPDF = (result, subject, includeAnswers) => {
+export const generateExamPDF = (result, subject, includeAnswers, displayExplanation = false) => {
   // Create a new PDF document
   const doc = new jsPDF();
   
@@ -83,20 +83,20 @@ export const generateExamPDF = (result, subject, includeAnswers) => {
     // Render question based on type
     switch(questionType) {
       case 'MULTIPLE_CHOICE':
-        y = renderMultipleChoiceQuestion(doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, greenColor);
+        y = renderMultipleChoiceQuestion(doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, greenColor, displayExplanation);
         break;
       case 'TRUE_FALSE':
-        y = renderTrueFalseQuestion(doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, greenColor);
+        y = renderTrueFalseQuestion(doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, greenColor, displayExplanation);
         break;
       case 'SHORT_ANSWER':
-        y = renderShortAnswerQuestion(doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily);
+        y = renderShortAnswerQuestion(doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, displayExplanation);
         break;
       case 'ESSAY':
-        y = renderEssayQuestion(doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily);
+        y = renderEssayQuestion(doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, displayExplanation);
         break;
       default:
         // Default to multiple choice if type is unknown
-        y = renderMultipleChoiceQuestion(doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, greenColor);
+        y = renderMultipleChoiceQuestion(doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, greenColor, displayExplanation);
     }
     
     // Add a dotted line divider between questions (except for the last question)
@@ -163,7 +163,7 @@ const addDivider = (doc, margin, y, pageWidth) => {
 };
 
 // Helper function to render multiple choice question
-const renderMultipleChoiceQuestion = (doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, greenColor) => {
+const renderMultipleChoiceQuestion = (doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, greenColor, displayExplanation) => {
   // Options - consistent font for all options
   doc.setFont(fontFamily, 'normal');
   doc.setFontSize(11);
@@ -201,8 +201,8 @@ const renderMultipleChoiceQuestion = (doc, question, includeAnswers, margin, y, 
       y += wrappedOptionText.length * 7; // Adjust y position based on number of lines
     });
     
-    // Add explanation for teacher version
-    if (includeAnswers) {
+    // Add explanation for teacher version if displayExplanation is true
+    if (includeAnswers && displayExplanation) {
       // Explanation
       doc.setFontSize(11);
       doc.setFont(fontFamily, 'bold');
@@ -230,7 +230,7 @@ const renderMultipleChoiceQuestion = (doc, question, includeAnswers, margin, y, 
 };
 
 // Helper function to render true/false question
-const renderTrueFalseQuestion = (doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, greenColor) => {
+const renderTrueFalseQuestion = (doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, greenColor, displayExplanation) => {
   // Options - consistent font for all options
   doc.setFont(fontFamily, 'normal');
   doc.setFontSize(11);
@@ -273,8 +273,8 @@ const renderTrueFalseQuestion = (doc, question, includeAnswers, margin, y, textW
   doc.text('B. False', margin + 10, y);
   y += 7;
   
-  // Add explanation for teacher version
-  if (includeAnswers) {
+  // Add explanation for teacher version if displayExplanation is true
+  if (includeAnswers && displayExplanation) {
     // Explanation
     doc.setFontSize(11);
     doc.setFont(fontFamily, 'bold');
@@ -301,7 +301,7 @@ const renderTrueFalseQuestion = (doc, question, includeAnswers, margin, y, textW
 };
 
 // Helper function to render short answer question
-const renderShortAnswerQuestion = (doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily) => {
+const renderShortAnswerQuestion = (doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, displayExplanation) => {
   // Options - consistent font for all options
   doc.setFont(fontFamily, 'normal');
   doc.setFontSize(11);
@@ -322,26 +322,28 @@ const renderShortAnswerQuestion = (doc, question, includeAnswers, margin, y, tex
     doc.text(wrappedAnswerText, margin + 10, y);
     y += wrappedAnswerText.length * 7;
     
-    // Marks Evaluation - aligned with question
-    doc.setFontSize(11);
-    doc.setFont(fontFamily, 'bold');
-    doc.text('Marks Evaluation:', margin, y);
-    y += 7;
-    
-    // Explanation with text wrapping
-    doc.setFont(fontFamily, 'normal');
-    const evaluationLines = question.explanation.split('\n');
-    evaluationLines.forEach(line => {
-      // Check if we need a new page
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
+    // Marks Evaluation - aligned with question (only if displayExplanation is true)
+    if (displayExplanation) {
+      doc.setFontSize(11);
+      doc.setFont(fontFamily, 'bold');
+      doc.text('Marks Evaluation:', margin, y);
+      y += 7;
       
-      const wrappedLine = doc.splitTextToSize(line, textWidth - 10);
-      doc.text(wrappedLine, margin + 10, y);
-      y += wrappedLine.length * 7; // Adjust y position based on number of lines
-    });
+      // Explanation with text wrapping
+      doc.setFont(fontFamily, 'normal');
+      const evaluationLines = question.explanation.split('\n');
+      evaluationLines.forEach(line => {
+        // Check if we need a new page
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        
+        const wrappedLine = doc.splitTextToSize(line, textWidth - 10);
+        doc.text(wrappedLine, margin + 10, y);
+        y += wrappedLine.length * 7; // Adjust y position based on number of lines
+      });
+    }
   } else {
     // Short answer question - student version
     doc.setFont(fontFamily, 'normal');
@@ -361,7 +363,7 @@ const renderShortAnswerQuestion = (doc, question, includeAnswers, margin, y, tex
 };
 
 // Helper function to render essay question
-const renderEssayQuestion = (doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily) => {
+const renderEssayQuestion = (doc, question, includeAnswers, margin, y, textWidth, pageWidth, fontFamily, displayExplanation) => {
   // Options - consistent font for all options
   doc.setFont(fontFamily, 'normal');
   doc.setFontSize(11);
@@ -387,26 +389,28 @@ const renderEssayQuestion = (doc, question, includeAnswers, margin, y, textWidth
       y += wrappedAnswerText.length * 7;
     }
     
-    // Explanation
-    doc.setFontSize(11);
-    doc.setFont(fontFamily, 'bold');
-    doc.text('Marks Evaluation:', margin, y);
-    y += 7;
-    
-    // Explanation with text wrapping
-    doc.setFont(fontFamily, 'normal');
-    const explanationLines = question.explanation.split('\n');
-    explanationLines.forEach(line => {
-      // Check if we need a new page
-      if (y > 270) {
-        doc.addPage();
-        y = 20;
-      }
+    // Marks Evaluation (only if displayExplanation is true)
+    if (displayExplanation) {
+      doc.setFontSize(11);
+      doc.setFont(fontFamily, 'bold');
+      doc.text('Marks Evaluation:', margin, y);
+      y += 7;
       
-      const wrappedLine = doc.splitTextToSize(line, textWidth - 10);
-      doc.text(wrappedLine, margin + 10, y);
-      y += wrappedLine.length * 7; // Adjust y position based on number of lines
-    });
+      // Explanation with text wrapping
+      doc.setFont(fontFamily, 'normal');
+      const explanationLines = question.explanation.split('\n');
+      explanationLines.forEach(line => {
+        // Check if we need a new page
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        
+        const wrappedLine = doc.splitTextToSize(line, textWidth - 10);
+        doc.text(wrappedLine, margin + 10, y);
+        y += wrappedLine.length * 7; // Adjust y position based on number of lines
+      });
+    }
   } else {
     // Essay question - student version
     doc.setFont(fontFamily, 'normal');
