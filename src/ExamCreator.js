@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
 import './ExamCreator.css';
 
-function ExamCreator() {
+function ExamCreator({ onBackToHome }) {
   // This function would be better implemented with proper routing
   // For now, we'll use a simple approach to navigate back
   const apiBaseUrl = 'http://localhost:8080/api/exam';
@@ -189,9 +189,13 @@ function ExamCreator() {
   };
 
   const handleBack = () => {
-    // Navigate back to the main page
-    // In a real app with proper routing, we would use history.push('/') or similar
-    window.location.reload(); // This will reload the app and show the main page
+    // Use the onBackToHome prop to navigate back to the home page
+    if (onBackToHome) {
+      onBackToHome();
+    } else {
+      // Fallback to reload if prop is not provided
+      window.location.reload();
+    }
   };
 
   return (
