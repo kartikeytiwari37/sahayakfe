@@ -663,19 +663,19 @@ function ExamCreator() {
                       // Short answer question with answer
                       doc.setFont(fontFamily, 'normal');
                       
-                      // Show the correct answer
+                      // Show the correct answer - aligned with question
                       doc.setFont(fontFamily, 'bold');
-                      const answerLabel = 'Answer: ';
-                      doc.text(answerLabel, margin + 10, y);
+                      doc.text('Answer:', margin, y);
+                      y += 7;
                       
-                      // Display the answer with wrapping
+                      // Display the answer with wrapping - aligned with question
                       doc.setFont(fontFamily, 'normal');
                       const answerText = question.correctAnswer;
-                      const wrappedAnswerText = doc.splitTextToSize(answerText, textWidth - margin - 10 - doc.getTextWidth(answerLabel));
-                      doc.text(wrappedAnswerText, margin + 10 + doc.getTextWidth(answerLabel), y);
-                      y += wrappedAnswerText.length * 7 + 5;
+                      const wrappedAnswerText = doc.splitTextToSize(answerText, textWidth - 10);
+                      doc.text(wrappedAnswerText, margin + 10, y);
+                      y += wrappedAnswerText.length * 7;
                       
-                      // Marks Evaluation
+                      // Marks Evaluation - aligned with question
                       doc.setFontSize(11);
                       doc.setFont(fontFamily, 'bold');
                       doc.text('Marks Evaluation:', margin, y);
@@ -696,7 +696,7 @@ function ExamCreator() {
                         y += wrappedLine.length * 7; // Adjust y position based on number of lines
                       });
                       
-                      y += 10; // Add space after evaluation
+                      // No extra space needed here as the divider will add sufficient spacing
                     }
                     // Check if it's a True-False question
                     else if (question.options === null && (question.correctAnswer === "True" || question.correctAnswer === "False")) {
@@ -738,7 +738,7 @@ function ExamCreator() {
                       doc.text('B. False', margin + 10, y);
                       y += 7;
                       
-                      // Explanation
+                      // Explanation - aligned with question
                       doc.setFontSize(11);
                       doc.setFont(fontFamily, 'bold');
                       doc.text('Explanation:', margin, y);
@@ -758,6 +758,8 @@ function ExamCreator() {
                         doc.text(wrappedLine, margin + 10, y);
                         y += wrappedLine.length * 7; // Adjust y position based on number of lines
                       });
+                      
+                      // No extra space needed here as the divider will add sufficient spacing
                     } else if (Array.isArray(question.options) && question.options.length === 0 && question.correctAnswer === "null") {
                       // Essay question
                       doc.setFont(fontFamily, 'normal');
@@ -839,8 +841,16 @@ function ExamCreator() {
                       });
                     }
                     
-                    // Add space between questions
-                    y += 15;
+                    // Add a dotted line divider between questions (except for the last question)
+                    if (index < result.examData.questions.length - 1) {
+                      y += 10; // Space before divider
+                      doc.setDrawColor(150, 150, 150); // Light gray
+                      doc.setLineDashPattern([3, 3], 0); // Dotted line
+                      doc.line(margin, y, pageWidth - margin, y);
+                      doc.setLineDashPattern([10, 0], 0); // Reset to solid line
+                      y += 10; // Space after divider
+                    }
+                    // No extra space for the last question
                   });
                   
                   // Save the PDF
