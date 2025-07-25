@@ -14,14 +14,12 @@ function HomePage({ onSelectAgent }) {
       character: '👨‍🚀'
     },
     {
-      id: 'math-buddy',
-      name: '🔢 Math Buddy',
-      description: 'Makes numbers and equations as easy as 1-2-3!',
-      icon: '🧮',
-      color: '#FF8A95',
-      status: 'Coming Soon',
-      subjects: ['Addition', 'Subtraction', 'Geometry'],
-      character: '🤓'
+      id: 'exam-taker',
+      name: 'Exam Taker',
+      description: 'AI-Powered Examination System',
+      icon: '📝',
+      color: '#FF9800',
+      status: 'Available'
     },
     {
       id: 'science-explorer',
@@ -103,9 +101,18 @@ function HomePage({ onSelectAgent }) {
                   <span key={index} className="subject-tag">{subject}</span>
                 ))}
               </div>
-              <div className={`agent-status ${agent.status.toLowerCase().replace(' ', '-')}`}>
-                {agent.status === 'Available' ? '🎯 Join now' : '⏰ Coming Soon'}
-              </div>
+              {agent.status === 'Available' && agent.id === 'kalam-sir' && (
+                <div className="agent-features">
+                  <span className="feature">🎤 Voice Chat</span>
+                  <span className="feature">📺 Screen Share</span>
+                  <span className="feature">💬 Text Chat</span>
+                </div>
+              )}
+              {agent.status === 'Available' && agent.id === 'exam-taker' && (
+                <div className="agent-features">
+                  <span className="feature try-it-button" onClick={() => onSelectAgent(agent.id)}>🚀 Try it</span>
+                </div>
+              )}
             </div>
           ))}
         </div>

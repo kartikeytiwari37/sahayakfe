@@ -4,14 +4,19 @@ import HomePage from './components/HomePage';
 import KalamSir from './components/KalamSir';
 import TeachingSession from './components/TeachingSession';
 import './App.css';
+import ExamCreator from './ExamCreator';
+import SockJS from 'sockjs-client';
 
 function App() {
+  const [currentPage, setCurrentPage] = useState('home');
   const [currentView, setCurrentView] = useState('home'); // home, kalam-sir, teaching-session
   const [customPrompt, setCustomPrompt] = useState('');
 
   const handleSelectAgent = (agentId) => {
     if (agentId === 'kalam-sir') {
       setCurrentView('kalam-sir');
+    } else if (agentId === 'exam-taker') {
+      setCurrentView('exam-creator');
     }
   };
 
@@ -31,7 +36,7 @@ function App() {
 
   if (currentView === 'kalam-sir') {
     return (
-      <KalamSir 
+      <KalamSir
         onBackToHome={handleBackToHome}
         onStartTeaching={handleStartTeaching}
       />
@@ -40,17 +45,22 @@ function App() {
 
   if (currentView === 'teaching-session') {
     return (
-      <TeachingSession 
+      <TeachingSession
         customPrompt={customPrompt}
         onBackToHome={handleBackToHome}
       />
     );
   }
 
+  if (currentView === 'exam-creator') {
+    return <ExamCreator onBackToHome={handleBackToHome} />;
+  }
+
   return null;
 }
 
 function OldApp() {
+  const [currentPage, setCurrentPage] = useState('home');
   const [connected, setConnected] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -73,7 +83,7 @@ function OldApp() {
     
     setConnecting(true);
     try {
-      const socket = new SockJS('http://localhost:8080/sahayak-teacher');
+      const socket = new SockJS('https://sahayak-backend-199913799544.us-central1.run.app/sahayak-teacher');
       
       socket.onopen = () => {
         console.log('Connected to Sahayak Teacher');
@@ -538,6 +548,21 @@ function OldApp() {
       reader.readAsDataURL(blob);
     });
   };
+
+  // Navigate to Exam Creator page
+  const navigateToExamCreator = () => {
+    setCurrentPage('examCreator');
+  };
+
+  // Navigate to Home page
+  const navigateToHome = () => {
+    setCurrentPage('home');
+  };
+
+  // Render based on current page
+  if (currentPage === 'examCreator') {
+    return <ExamCreator />;
+  }
 
   return (
     <div className="App">

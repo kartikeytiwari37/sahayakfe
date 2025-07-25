@@ -156,12 +156,12 @@ body {
 }
 
 @keyframes fadeInUp {
-  from { 
-    opacity: 0; 
+  from {
+    opacity: 0;
     transform: translateY(20px);
   }
-  to { 
-    opacity: 1; 
+  to {
+    opacity: 1;
     transform: translateY(0);
   }
 }
@@ -400,27 +400,43 @@ body {
 }
 
 @keyframes recordingPulse {
-  0% { 
-    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3), 0 0 0 0 rgba(244, 67, 54, 0.3); 
+  0% {
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3), 0 0 0 0 rgba(244, 67, 54, 0.3);
   }
-  70% { 
-    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3), 0 0 0 10px rgba(244, 67, 54, 0); 
+  70% {
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3), 0 0 0 10px rgba(244, 67, 54, 0);
   }
-  100% { 
-    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3), 0 0 0 0 rgba(244, 67, 54, 0); 
+  100% {
+    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3), 0 0 0 0 rgba(244, 67, 54, 0);
   }
 }
 
 @keyframes sharingPulse {
-  0% { 
-    box-shadow: 0 4px 12px rgba(139, 126, 216, 0.3), 0 0 0 0 rgba(139, 126, 216, 0.3); 
+  0% {
+    box-shadow: 0 4px 12px rgba(139, 126, 216, 0.3), 0 0 0 0 rgba(139, 126, 216, 0.3);
   }
-  70% { 
-    box-shadow: 0 4px 12px rgba(139, 126, 216, 0.3), 0 0 0 10px rgba(139, 126, 216, 0); 
+  70% {
+    box-shadow: 0 4px 12px rgba(139, 126, 216, 0.3), 0 0 0 10px rgba(139, 126, 216, 0);
   }
-  100% { 
-    box-shadow: 0 4px 12px rgba(139, 126, 216, 0.3), 0 0 0 0 rgba(139, 126, 216, 0); 
+  100% {
+    box-shadow: 0 4px 12px rgba(139, 126, 216, 0.3), 0 0 0 0 rgba(139, 126, 216, 0);
   }
+}
+
+.media-btn.exam-creator-btn {
+  background: #9c27b0;
+}
+
+.media-btn.exam-creator-btn:hover:not(:disabled) {
+  background: #7b1fa2;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(156, 39, 176, 0.4);
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
 }
 
 .volume-indicator {
@@ -508,17 +524,17 @@ video {
   .volume-bar {
     width: 150px;
   }
-  
+
   .connect-btn,
   .disconnect-btn {
     width: 100%;
     max-width: 250px;
   }
-  
+
   .message.student {
     margin-left: 0;
   }
-  
+
   .message.teacher {
     margin-right: 0;
   }
@@ -528,20 +544,20 @@ video {
   .app-header h1 {
     font-size: 1.8rem;
   }
-  
+
   .app-main {
     padding: 0.5rem;
   }
-  
+
   .chat-container {
     padding: 1rem;
     min-height: 400px;
   }
-  
+
   .controls {
     padding: 1rem;
   }
-  
+
   .volume-bar {
     width: 120px;
   }
