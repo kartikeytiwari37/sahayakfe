@@ -5,7 +5,6 @@ import KalamSir from './components/KalamSir';
 import TeachingSession from './components/TeachingSession';
 import './App.css';
 import ExamCreator from './ExamCreator';
-import SockJS from 'sockjs-client';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');

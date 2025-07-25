@@ -19,7 +19,9 @@ function HomePage({ onSelectAgent }) {
       description: 'AI-Powered Examination System',
       icon: '📝',
       color: '#FF9800',
-      status: 'Available'
+      status: 'Available',
+      subjects: ['All Subjects'],
+      character: '🧑‍🏫'
     },
     {
       id: 'science-explorer',
@@ -96,11 +98,11 @@ function HomePage({ onSelectAgent }) {
               </div>
               <h3 className="agent-name">{agent.name}</h3>
               <p className="agent-description">{agent.description}</p>
-              <div className="agent-subjects">
-                {agent.subjects.map((subject, index) => (
-                  <span key={index} className="subject-tag">{subject}</span>
-                ))}
-              </div>
+                <div className="agent-subjects">
+                  {agent.subjects.map((subject, index) => (
+                    <span key={index} className="subject-tag">{subject}</span>
+                  ))}
+                </div>
               {agent.status === 'Available' && agent.id === 'kalam-sir' && (
                 <div className="agent-features">
                   <span className="feature">🎤 Voice Chat</span>
