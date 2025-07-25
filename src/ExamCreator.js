@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { jsPDF } from 'jspdf';
 import './ExamCreator.css';
 
 function ExamCreator() {
@@ -25,9 +26,17 @@ function ExamCreator() {
     // For demo purposes, we'll use mock data since the actual API might not be available
     // In a real application, this would be replaced with the actual API call
     try {
-      // Uncomment this section when the actual API is available
-      /*
+      // Make the actual API call to create an exam
       const apiUrl = `${apiBaseUrl}/create`;
+      
+      console.log('Making API call to:', apiUrl);
+      console.log('Request payload:', {
+        subject,
+        gradeLevel: grade,
+        examType,
+        numberOfQuestions: numQuestions,
+        customPrompt: prompt
+      });
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -48,9 +57,11 @@ function ExamCreator() {
       }
 
       const data = await response.json();
-      */
+      setResult(data);
+      return;
       
-      // Mock data for demonstration
+      // Fallback mock data in case the API is not available
+      /* 
       const mockData = {
         "status": "success",
         "message": "Exam created successfully",
@@ -94,10 +105,13 @@ function ExamCreator() {
         "rawResponse": "This is a mock response. In a real implementation, this would be the raw response from the Gemini API."
       };
       
-      // Simulate API delay
+      // If we reach here, it means the API call failed but didn't throw an error
+      // We'll use the mock data as a fallback
+      console.warn('API call completed but returned unexpected data. Using mock data as fallback.');
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setResult(mockData);
+      */
     } catch (err) {
       console.error('Error creating exam:', err);
       setError(err.message || 'Failed to create exam. Please try again.');
@@ -313,31 +327,106 @@ function ExamCreator() {
               <button 
                 className="download-button"
                 onClick={() => {
-                  // Create a blob with the exam data
-                  const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
-                  const url = URL.createObjectURL(blob);
+                  // Create a new PDF document
+                  const doc = new jsPDF();
                   
-                  // Create a link and trigger download
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `exam-${subject}-${new Date().toISOString().slice(0, 10)}.json`;
-                  document.body.appendChild(a);
-                  a.click();
+                  // Set initial position
+                  let y = 20;
+                  const pageWidth = doc.internal.pageSize.getWidth();
                   
-                  // Clean up
-                  document.body.removeChild(a);
-                  URL.revokeObjectURL(url);
+                  // Add title
+                  doc.setFontSize(16);
+                  doc.setFont('helvetica', 'bold');
+                  const title = `${result.examData.subject} Exam - ${result.examData.gradeLevel}`;
+                  doc.text(title, pageWidth / 2, y, { align: 'center' });
+                  y += 15;
+                  
+                  // Add exam info
+                  doc.setFontSize(12);
+                  doc.setFont('helvetica', 'normal');
+                  doc.text(`Subject: ${result.examData.subject}`, 20, y);
+                  y += 8;
+                  doc.text(`Grade Level: ${result.examData.gradeLevel}`, 20, y);
+                  y += 8;
+                  doc.text(`Exam Type: ${result.examData.examType}`, 20, y);
+                  y += 8;
+                  doc.text(`Number of Questions: ${result.examData.questions.length}`, 20, y);
+                  y += 15;
+                  
+                  // Add questions heading
+                  doc.setFontSize(14);
+                  doc.setFont('helvetica', 'bold');
+                  doc.text('Questions:', 20, y);
+                  y += 10;
+                  
+                  // Define a green color for the checkmark
+                  const greenColor = [0, 0.5, 0, 1]; // RGBA: Green color
+                  
+                  // Process each question
+                  result.examData.questions.forEach((question, index) => {
+                    // Check if we need a new page
+                    if (y > 250) {
+                      doc.addPage();
+                      y = 20;
+                    }
+                    
+                    // Question number and text - consistent font
+                    doc.setFontSize(12);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text(`Question ${index + 1}: ${question.questionText}`, 20, y);
+                    y += 10;
+                    
+                    // Options - consistent font for all options
+                    doc.setFont('helvetica', 'normal');
+                    doc.setFontSize(11);
+                    
+                    question.options.forEach((option, optIndex) => {
+                      const optionLetter = String.fromCharCode(65 + optIndex);
+                      const isCorrect = option === question.correctAnswer;
+                      
+                      // For correct answers, add a visible green checkmark
+                      if (isCorrect) {
+                        // Draw a green circle with checkmark
+                        doc.setFillColor(...greenColor);
+                        doc.circle(22, y - 2, 2, 'F');
+                        doc.setTextColor(1, 1, 1); // White
+                        doc.setFont('helvetica', 'bold');
+                        doc.text('✓', 21, y - 1, { align: 'center' });
+                        doc.setFont('helvetica', 'normal');
+                        doc.setTextColor(0, 0, 0); // Reset to black
+                      }
+                      
+                      // All options in the same font style
+                      doc.text(`${optionLetter}. ${option}`, 30, y);
+                      
+                      y += 7;
+                    });
+                    
+                    // Explanation
+                    doc.setFontSize(11);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Explanation:', 20, y);
+                    y += 7;
+                    
+                    // Split explanation into lines
+                    const explanationLines = question.explanation.split('\n');
+                    doc.setFont('helvetica', 'normal');
+                    explanationLines.forEach(line => {
+                      doc.text(line, 30, y);
+                      y += 7;
+                    });
+                    
+                    // Add space between questions
+                    y += 10;
+                  });
+                  
+                  // Save the PDF
+                  doc.save(`exam-${subject}-${new Date().toISOString().slice(0, 10)}.pdf`);
                 }}
               >
                 Download Exam
               </button>
               
-              <button 
-                className="print-button"
-                onClick={() => window.print()}
-              >
-                Print Exam
-              </button>
             </div>
           </div>
         )}
