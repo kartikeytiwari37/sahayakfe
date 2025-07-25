@@ -11,6 +11,15 @@ function TeachingSession({ customPrompt, onBackToHome }) {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [volume, setVolume] = useState(0);
   const [currentTeacherMessage, setCurrentTeacherMessage] = useState(''); // For accumulating streaming response
+  const [chatHistory, setChatHistory] = useState([]); // Store complete chat history for video generation
+  const [videoGeneration, setVideoGeneration] = useState({
+    isGenerating: false,
+    operationName: null,
+    status: 'idle', // idle, generating-prompt, generating-video, polling, completed, error
+    progress: 0,
+    videoUrl: null,
+    error: null
+  });
   
   const socketRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -180,6 +189,15 @@ function TeachingSession({ customPrompt, onBackToHome }) {
       timestamp: new Date().toLocaleTimeString()
     };
     setMessages(prev => [...prev, message]);
+    
+    // Add to chat history for video generation (exclude system messages)
+    if (type === 'student' || type === 'teacher') {
+      setChatHistory(prev => [...prev, {
+        role: type === 'student' ? 'user' : 'assistant',
+        content: content,
+        timestamp: new Date().toISOString()
+      }]);
+    }
   };
 
   const sendTextMessage = () => {
@@ -463,97 +481,385 @@ function TeachingSession({ customPrompt, onBackToHome }) {
     }
   };
 
+  // Video Generation Functions
+  const generateVideo = async () => {
+    if (chatHistory.length === 0) {
+      addMessage('error', 'No conversation history available for video generation');
+      return;
+    }
+
+    setVideoGeneration(prev => ({
+      ...prev,
+      isGenerating: true,
+      status: 'generating-prompt',
+      progress: 10,
+      error: null,
+      videoUrl: null
+    }));
+
+    try {
+      // Step 1: Generate video prompt
+      const context = {
+        teachingPrompt: customPrompt,
+        chatHistory: chatHistory.slice(-10), // Last 10 messages for context
+        timestamp: new Date().toISOString()
+      };
+
+      const promptResponse = await fetch('http://localhost:8080/api/sahayak/video/generate-prompt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ context })
+      });
+
+      if (!promptResponse.ok) {
+        throw new Error('Failed to generate video prompt');
+      }
+
+      const promptData = await promptResponse.json();
+      
+      setVideoGeneration(prev => ({
+        ...prev,
+        status: 'generating-video',
+        progress: 30
+      }));
+
+      // Step 2: Generate video
+      const videoResponse = await fetch('http://localhost:8080/api/sahayak/video/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: promptData.prompt })
+      });
+
+      if (!videoResponse.ok) {
+        throw new Error('Failed to start video generation');
+      }
+
+      const videoData = await videoResponse.json();
+      
+      setVideoGeneration(prev => ({
+        ...prev,
+        operationName: videoData.operationName,
+        status: 'polling',
+        progress: 50
+      }));
+
+      // Step 3: Poll for completion
+      pollVideoStatus(videoData.operationName);
+
+    } catch (error) {
+      console.error('Video generation error:', error);
+      setVideoGeneration(prev => ({
+        ...prev,
+        isGenerating: false,
+        status: 'error',
+        error: error.message
+      }));
+      addMessage('error', `Video generation failed: ${error.message}`);
+    }
+  };
+
+  const pollVideoStatus = async (operationName) => {
+    const maxAttempts = 60; // 5 minutes max
+    let attempts = 0;
+
+      const poll = async () => {
+        try {
+          attempts++;
+          const response = await fetch(`http://localhost:8080/api/sahayak/video/status?operationName=${encodeURIComponent(operationName)}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to check video status');
+        }
+
+        const data = await response.json();
+        
+        if (data.done) {
+          // Video generation completed
+          setVideoGeneration(prev => ({
+            ...prev,
+            status: 'completed',
+            progress: 90
+          }));
+
+          // Download the video
+          downloadVideo(data.videoUri);
+        } else if (attempts >= maxAttempts) {
+          throw new Error('Video generation timeout');
+        } else {
+          // Update progress
+          const progress = Math.min(50 + (attempts / maxAttempts) * 40, 90);
+          setVideoGeneration(prev => ({
+            ...prev,
+            progress: progress
+          }));
+
+          // Continue polling
+          setTimeout(poll, 5000); // Poll every 5 seconds
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+        setVideoGeneration(prev => ({
+          ...prev,
+          isGenerating: false,
+          status: 'error',
+          error: error.message
+        }));
+        addMessage('error', `Video polling failed: ${error.message}`);
+      }
+    };
+
+    poll();
+  };
+
+  const downloadVideo = async (videoUri) => {
+    try {
+      const response = await fetch('http://localhost:8080/api/sahayak/video/download', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ videoUri })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download video');
+      }
+
+      const blob = await response.blob();
+      const videoUrl = URL.createObjectURL(blob);
+
+      setVideoGeneration(prev => ({
+        ...prev,
+        isGenerating: false,
+        status: 'completed',
+        progress: 100,
+        videoUrl: videoUrl
+      }));
+
+      addMessage('system', '🎬 Educational video generated successfully! Check the video player below.');
+    } catch (error) {
+      console.error('Video download error:', error);
+      setVideoGeneration(prev => ({
+        ...prev,
+        isGenerating: false,
+        status: 'error',
+        error: error.message
+      }));
+      addMessage('error', `Video download failed: ${error.message}`);
+    }
+  };
+
+  const resetVideoGeneration = () => {
+    if (videoGeneration.videoUrl) {
+      URL.revokeObjectURL(videoGeneration.videoUrl);
+    }
+    setVideoGeneration({
+      isGenerating: false,
+      operationName: null,
+      status: 'idle',
+      progress: 0,
+      videoUrl: null,
+      error: null
+    });
+  };
+
   return (
     <div className="teaching-session">
       <div className="session-header">
-        <button className="back-button" onClick={onBackToHome}>
-          ← Back to Home
-        </button>
-        <div className="session-title">
-          <h1>🎓 Teaching Session</h1>
-          <p>Personalized AI Teacher</p>
+        <div className="session-info">
+          <div className="teacher-avatar">🎓</div>
+          <div className="session-details">
+            <h2>Teaching Session</h2>
+            <p>Personalized AI Teacher</p>
+          </div>
         </div>
-        <div className="connection-status">
-          {connected ? (
-            <span className="status connected">● Connected</span>
-          ) : connecting ? (
-            <span className="status connecting">● Connecting...</span>
-          ) : (
-            <span className="status disconnected">● Disconnected</span>
-          )}
+        <div className="session-controls">
+          <button className="back-to-home-btn" onClick={onBackToHome}>
+            ← Back to Home
+          </button>
+          <div className="connection-status">
+            {connected ? (
+              <span className="status connected">● Connected</span>
+            ) : connecting ? (
+              <span className="status connecting">● Connecting...</span>
+            ) : (
+              <span className="status disconnected">● Disconnected</span>
+            )}
+          </div>
         </div>
       </div>
 
-      {customPrompt && (
-        <div className="prompt-display">
-          <h3>🎯 Your Teaching Assistant:</h3>
-          <div className="prompt-content">
-            {customPrompt}
-          </div>
-        </div>
-      )}
-
       <div className="session-content">
-        <div className="chat-container">
-          <div className="messages">
-            {messages.map(message => (
-              <div key={message.id} className={`message ${message.type}`}>
-                <div className="message-content">
-                  <strong>
-                    {message.type === 'student' ? 'You' : 
-                     message.type === 'teacher' ? 'AI Teacher' : 
-                     message.type === 'system' ? 'System' : 'Error'}:
-                  </strong>
-                  <span>{message.content}</span>
-                </div>
-                <div className="message-time">{message.timestamp}</div>
-              </div>
-            ))}
-          </div>
+        <div className="main-content">
+          <div className="chat-section">
+            <div className="chat-header">
+              <h3>💬 Chat with Your AI Teacher</h3>
+              <p>Ask questions, get explanations, and learn interactively</p>
+            </div>
 
-          <div className="input-area">
-            <input
-              type="text"
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendTextMessage()}
-              placeholder="Ask your personalized teacher a question..."
-              disabled={!connected}
-            />
-            <button onClick={sendTextMessage} disabled={!connected || !inputText.trim()}>
-              Send
-            </button>
+            <div className="messages-container">
+              {messages.map(message => (
+                <div key={message.id} className={`message ${message.type}`}>
+                  <div className="message-content">
+                    <strong>
+                      {message.type === 'student' ? 'You' : 
+                       message.type === 'teacher' ? 'AI Teacher' : 
+                       message.type === 'system' ? 'System' : 'Error'}:
+                    </strong>
+                    <span>{message.content}</span>
+                  </div>
+                  <div className="message-time">{message.timestamp}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="input-section">
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendTextMessage()}
+                placeholder="Ask your personalized teacher a question..."
+                disabled={!connected}
+              />
+              <button 
+                className="send-btn"
+                onClick={sendTextMessage} 
+                disabled={!connected || !inputText.trim()}
+              >
+                Send
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="controls">
-          <div className="media-controls">
-            <button
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={!connected}
-              className={`media-btn ${isRecording ? 'recording' : ''}`}
-            >
-              {isRecording ? '🛑 End Voice Chat' : '🎤 Start Voice Chat'}
-            </button>
+        <div className="controls-section">
+          <div className="connection-panel">
+            <h4>🎤 Voice & Screen</h4>
+            <div className="connection-buttons">
+              <button
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={!connected}
+                className={`connect-btn ${isRecording ? 'recording' : ''}`}
+              >
+                {isRecording ? '🛑 End Voice Chat' : '🎤 Start Voice Chat'}
+              </button>
 
-            <button
-              onClick={isScreenSharing ? stopScreenShare : startScreenShare}
-              disabled={!connected}
-              className={`media-btn ${isScreenSharing ? 'sharing' : ''}`}
-            >
-              {isScreenSharing ? '📱 Stop Sharing' : '📺 Share Screen'}
-            </button>
+              <button
+                onClick={isScreenSharing ? stopScreenShare : startScreenShare}
+                disabled={!connected}
+                className={`connect-btn ${isScreenSharing ? 'sharing' : ''}`}
+              >
+                {isScreenSharing ? '📱 Stop Sharing' : '📺 Share Screen'}
+              </button>
+            </div>
+          </div>
+
+          <div className="media-panel">
+            <h4>🎬 Video Generation</h4>
+            <div className="media-controls">
+              <button
+                onClick={generateVideo}
+                disabled={!connected || videoGeneration.isGenerating || chatHistory.length === 0}
+                className={`media-btn ${videoGeneration.isGenerating ? 'generating' : ''}`}
+              >
+                {videoGeneration.isGenerating ? '🎬 Generating...' : '🎬 Generate Video'}
+              </button>
+            </div>
+
+            {videoGeneration.isGenerating && (
+              <div className="video-generation-progress">
+                <div className="progress-header">
+                  <span className="progress-title">Creating Educational Video</span>
+                  <span className="progress-percentage">{Math.round(videoGeneration.progress)}%</span>
+                </div>
+                <div className="progress-bar">
+                  <div 
+                    className="progress-fill" 
+                    style={{ width: `${videoGeneration.progress}%` }}
+                  ></div>
+                </div>
+                <div className="progress-status">
+                  {videoGeneration.status === 'generating-prompt' && 'Creating video prompt...'}
+                  {videoGeneration.status === 'generating-video' && 'Starting video generation...'}
+                  {videoGeneration.status === 'polling' && 'AI is creating your video...'}
+                  {videoGeneration.status === 'completed' && 'Finalizing video...'}
+                </div>
+              </div>
+            )}
+
+            {videoGeneration.error && (
+              <div className="error-message">
+                <div className="error-header">
+                  <span className="error-icon">❌</span>
+                  <span className="error-title">Video Generation Failed</span>
+                </div>
+                <div className="error-text">{videoGeneration.error}</div>
+                <button 
+                  className="media-btn"
+                  onClick={() => {
+                    resetVideoGeneration();
+                    generateVideo();
+                  }}
+                >
+                  🔄 Try Again
+                </button>
+              </div>
+            )}
           </div>
 
           {isRecording && (
-            <div className="volume-indicator">
-              <div className="volume-bar">
-                <div 
-                  className="volume-level" 
-                  style={{ width: `${volume * 100}%` }}
-                ></div>
+            <div className="volume-panel">
+              <h4>🔊 Voice Level</h4>
+              <div className="volume-indicator">
+                <div className="volume-bar">
+                  <div 
+                    className="volume-level" 
+                    style={{ width: `${volume * 100}%` }}
+                  ></div>
+                </div>
+                <span>Volume: {Math.round(volume * 100)}%</span>
               </div>
-              <span>Volume: {Math.round(volume * 100)}%</span>
+            </div>
+          )}
+
+          {videoGeneration.videoUrl && (
+            <div className="video-panel">
+              <div className="video-header">
+                <h4>🎬 Video Ready!</h4>
+                <button 
+                  className="reset-video-btn"
+                  onClick={resetVideoGeneration}
+                  title="Generate new video"
+                >
+                  🔄
+                </button>
+              </div>
+              <div className="video-preview">
+                <div className="video-thumbnail">
+                  <div className="play-icon">▶️</div>
+                  <span>Educational Video Generated</span>
+                </div>
+                <button 
+                  className="watch-video-btn"
+                  onClick={() => setVideoGeneration(prev => ({ ...prev, showModal: true }))}
+                >
+                  🎬 Watch Video
+                </button>
+              </div>
+              <div className="video-actions">
+                <a 
+                  href={videoGeneration.videoUrl} 
+                  download="educational-video.mp4"
+                  className="download-btn"
+                >
+                  📥 Download
+                </a>
+              </div>
             </div>
           )}
         </div>
@@ -562,11 +868,56 @@ function TeachingSession({ customPrompt, onBackToHome }) {
           ref={videoRef} 
           autoPlay 
           muted 
-          style={{ display: isScreenSharing ? 'block' : 'none', maxWidth: '300px' }}
+          style={{ display: 'none' }}
           className="screen-preview"
         />
         <canvas ref={canvasRef} style={{ display: 'none' }} />
       </div>
+
+      {/* Video Modal */}
+      {videoGeneration.showModal && videoGeneration.videoUrl && (
+        <div className="video-modal-overlay" onClick={() => setVideoGeneration(prev => ({ ...prev, showModal: false }))}>
+          <div className="video-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="video-modal-header">
+              <h3>🎬 Educational Video</h3>
+              <button 
+                className="close-modal-btn"
+                onClick={() => setVideoGeneration(prev => ({ ...prev, showModal: false }))}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="video-modal-content">
+              <video 
+                controls 
+                autoPlay
+                className="modal-video"
+                src={videoGeneration.videoUrl}
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <div className="video-modal-actions">
+              <a 
+                href={videoGeneration.videoUrl} 
+                download="educational-video.mp4"
+                className="download-btn"
+              >
+                📥 Download Video
+              </a>
+              <button 
+                className="generate-btn"
+                onClick={() => {
+                  setVideoGeneration(prev => ({ ...prev, showModal: false }));
+                  resetVideoGeneration();
+                }}
+              >
+                🔄 Generate New Video
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
