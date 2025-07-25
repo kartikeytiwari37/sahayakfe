@@ -642,13 +642,6 @@ function OldApp() {
             >
               {isScreenSharing ? '📱 Stop Sharing' : '📺 Share Screen'}
             </button>
-
-            <button
-              onClick={navigateToExamCreator}
-              className="media-btn exam-creator-btn"
-            >
-              📝 Exam Creator
-            </button>
           </div>
 
           {isRecording && (
