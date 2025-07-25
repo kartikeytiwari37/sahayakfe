@@ -242,11 +242,43 @@
   color: white;
 }
 
-.options-list {
+.options-list,
+.true-false-options {
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
   margin-bottom: 1.5rem;
+}
+
+/* Specific styling for True-False options */
+.true-false-options .option-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.true-false-options .option-item.correct {
+  background: rgba(76, 175, 80, 0.25);
+  border: 1px solid rgba(76, 175, 80, 0.6);
+}
+
+/* Styling for Essay questions */
+.essay-question {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.essay-prompt {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  padding: 1rem;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .option-item {

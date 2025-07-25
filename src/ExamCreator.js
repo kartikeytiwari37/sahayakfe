@@ -15,6 +15,32 @@ function ExamCreator() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [activeQuestion, setActiveQuestion] = useState(0);
+  
+  // Helper function to determine the exam type from the API response
+  const getExamTypeFromResponse = (examData) => {
+    if (!examData) return null;
+    
+    // Check if it's a True-False exam
+    if (examData.examType === "True-False" || 
+        (examData.questions && examData.questions.length > 0 && 
+         examData.questions[0].options === null && 
+         (examData.questions[0].correctAnswer === "True" || 
+          examData.questions[0].correctAnswer === "False"))) {
+      return "TRUE_FALSE";
+    }
+    
+    // Check if it's an Essay exam
+    if (examData.examType === "ESSAY" || 
+        (examData.questions && examData.questions.length > 0 && 
+         Array.isArray(examData.questions[0].options) && 
+         examData.questions[0].options.length === 0 && 
+         examData.questions[0].correctAnswer === "null")) {
+      return "ESSAY";
+    }
+    
+    // Default to multiple choice
+    return "MULTIPLE_CHOICE";
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -30,10 +56,22 @@ function ExamCreator() {
       const apiUrl = `${apiBaseUrl}/create`;
       
       console.log('Making API call to:', apiUrl);
+      // Convert examType to uppercase enum format
+      const examTypeEnum = (() => {
+        switch(examType) {
+          case 'multiple-choice': return 'MULTIPLE_CHOICE';
+          case 'true-false': return 'TRUE_FALSE';
+          case 'essay': return 'ESSAY';
+          case 'mixed': return 'MIXED';
+          case 'short-answer': return 'SHORT_ANSWER';
+          default: return 'MULTIPLE_CHOICE';
+        }
+      })();
+      
       console.log('Request payload:', {
         subject,
         gradeLevel: grade,
-        examType,
+        examType: examTypeEnum,
         numberOfQuestions: numQuestions,
         customPrompt: prompt
       });
@@ -46,7 +84,7 @@ function ExamCreator() {
         body: JSON.stringify({
           subject,
           gradeLevel: grade,
-          examType,
+          examType: examTypeEnum,
           numberOfQuestions: numQuestions,
           customPrompt: prompt
         }),
@@ -185,10 +223,10 @@ function ExamCreator() {
                 onChange={(e) => setExamType(e.target.value)}
                 required
               >
-                <option value="multiple-choice">Multiple Choice</option>
+                <option value="multiple-choice">Multiple Choices</option>
                 <option value="true-false">True/False</option>
-                <option value="short-answer">Short Answer</option>
-                <option value="essay">Essay</option>
+                <option value="short-answer">Short Answer Questions</option>
+                <option value="essay">Essay Questions</option>
                 <option value="mixed">Mixed</option>
               </select>
             </div>
@@ -264,7 +302,18 @@ function ExamCreator() {
               </div>
               <div className="exam-info-item">
                 <span className="info-label">Exam Type:</span> 
-                <span className="info-value">{result.examData.examType}</span>
+                <span className="info-value">
+                  {(() => {
+                    switch(result.examData.examType) {
+                      case 'MULTIPLE_CHOICE': return 'Multiple Choices';
+                      case 'TRUE_FALSE': return 'True/False';
+                      case 'SHORT_ANSWER': return 'Short Answer Questions';
+                      case 'ESSAY': return 'Essay Questions';
+                      case 'MIXED': return 'Mixed';
+                      default: return result.examData.examType;
+                    }
+                  })()}
+                </span>
               </div>
               <div className="exam-info-item">
                 <span className="info-label">Questions:</span> 
@@ -296,20 +345,53 @@ function ExamCreator() {
                   <div className="question-number">Question {activeQuestion + 1} of {result.examData.questions.length}</div>
                   <div className="question-text">{result.examData.questions[activeQuestion].questionText}</div>
                   
-                  <div className="options-list">
-                    {result.examData.questions[activeQuestion].options.map((option, index) => (
+                  {/* Determine the exam type and render appropriate UI */}
+                  {getExamTypeFromResponse(result.examData) === "TRUE_FALSE" ? (
+                    // True-False question UI
+                    <div className="true-false-options">
                       <div 
-                        key={index} 
-                        className={`option-item ${option === result.examData.questions[activeQuestion].correctAnswer ? 'correct' : ''}`}
+                        className={`option-item ${result.examData.questions[activeQuestion].correctAnswer === "True" ? 'correct' : ''}`}
                       >
-                        <span className="option-marker">{String.fromCharCode(65 + index)}.</span>
-                        <span className="option-text">{option}</span>
-                        {option === result.examData.questions[activeQuestion].correctAnswer && (
+                        <span className="option-marker">A.</span>
+                        <span className="option-text">True</span>
+                        {result.examData.questions[activeQuestion].correctAnswer === "True" && (
                           <span className="correct-marker">✓</span>
                         )}
                       </div>
-                    ))}
-                  </div>
+                      <div 
+                        className={`option-item ${result.examData.questions[activeQuestion].correctAnswer === "False" ? 'correct' : ''}`}
+                      >
+                        <span className="option-marker">B.</span>
+                        <span className="option-text">False</span>
+                        {result.examData.questions[activeQuestion].correctAnswer === "False" && (
+                          <span className="correct-marker">✓</span>
+                        )}
+                      </div>
+                    </div>
+                  ) : getExamTypeFromResponse(result.examData) === "ESSAY" ? (
+                    // Essay question UI
+                    <div className="essay-question">
+                      <div className="essay-prompt">
+                        <p>This is an essay question. Students should write a detailed response addressing the prompt above.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    // Multiple Choice question UI (default)
+                    <div className="options-list">
+                      {result.examData.questions[activeQuestion].options.map((option, index) => (
+                        <div 
+                          key={index} 
+                          className={`option-item ${option === result.examData.questions[activeQuestion].correctAnswer ? 'correct' : ''}`}
+                        >
+                          <span className="option-marker">{String.fromCharCode(65 + index)}.</span>
+                          <span className="option-text">{option}</span>
+                          {option === result.examData.questions[activeQuestion].correctAnswer && (
+                            <span className="correct-marker">✓</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   
                   <div className="explanation-box">
                     <div className="explanation-title">Explanation:</div>
@@ -333,30 +415,46 @@ function ExamCreator() {
                   // Set initial position
                   let y = 20;
                   const pageWidth = doc.internal.pageSize.getWidth();
+                  const margin = 20;
+                  const textWidth = pageWidth - (margin * 2);
+                  
+                  // Set consistent font family throughout the document
+                  const fontFamily = 'helvetica';
                   
                   // Add title
                   doc.setFontSize(16);
-                  doc.setFont('helvetica', 'bold');
+                  doc.setFont(fontFamily, 'bold');
                   const title = `${result.examData.subject} Exam - ${result.examData.gradeLevel}`;
                   doc.text(title, pageWidth / 2, y, { align: 'center' });
                   y += 15;
                   
                   // Add exam info
                   doc.setFontSize(12);
-                  doc.setFont('helvetica', 'normal');
-                  doc.text(`Subject: ${result.examData.subject}`, 20, y);
+                  doc.setFont(fontFamily, 'normal');
+                  doc.text(`Subject: ${result.examData.subject}`, margin, y);
                   y += 8;
-                  doc.text(`Grade Level: ${result.examData.gradeLevel}`, 20, y);
+                  doc.text(`Grade Level: ${result.examData.gradeLevel}`, margin, y);
                   y += 8;
-                  doc.text(`Exam Type: ${result.examData.examType}`, 20, y);
+                  // Display proper exam type name
+                  const examTypeDisplay = (() => {
+                    switch(result.examData.examType) {
+                      case 'MULTIPLE_CHOICE': return 'Multiple Choices';
+                      case 'TRUE_FALSE': return 'True/False';
+                      case 'SHORT_ANSWER': return 'Short Answer Questions';
+                      case 'ESSAY': return 'Essay Questions';
+                      case 'MIXED': return 'Mixed';
+                      default: return result.examData.examType;
+                    }
+                  })();
+                  doc.text(`Exam Type: ${examTypeDisplay}`, margin, y);
                   y += 8;
-                  doc.text(`Number of Questions: ${result.examData.questions.length}`, 20, y);
+                  doc.text(`Number of Questions: ${result.examData.questions.length}`, margin, y);
                   y += 15;
                   
                   // Add questions heading
                   doc.setFontSize(14);
-                  doc.setFont('helvetica', 'bold');
-                  doc.text('Questions:', 20, y);
+                  doc.setFont(fontFamily, 'bold');
+                  doc.text('Questions:', margin, y);
                   y += 10;
                   
                   // Define a green color for the checkmark
@@ -370,50 +468,128 @@ function ExamCreator() {
                       y = 20;
                     }
                     
-                    // Question number and text - consistent font
+                    // Question number and text with text wrapping
                     doc.setFontSize(12);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text(`Question ${index + 1}: ${question.questionText}`, 20, y);
-                    y += 10;
+                    doc.setFont(fontFamily, 'bold');
+                    const questionText = `Question ${index + 1}: ${question.questionText}`;
+                    const wrappedQuestionText = doc.splitTextToSize(questionText, textWidth);
+                    doc.text(wrappedQuestionText, margin, y);
+                    y += wrappedQuestionText.length * 7; // Adjust y position based on number of lines
                     
                     // Options - consistent font for all options
-                    doc.setFont('helvetica', 'normal');
+                    doc.setFont(fontFamily, 'normal');
                     doc.setFontSize(11);
                     
-                    question.options.forEach((option, optIndex) => {
-                      const optionLetter = String.fromCharCode(65 + optIndex);
-                      const isCorrect = option === question.correctAnswer;
+                    // Check if it's a True-False question
+                    if (question.options === null && (question.correctAnswer === "True" || question.correctAnswer === "False")) {
+                      // True option
+                      const isTrueCorrect = question.correctAnswer === "True";
                       
                       // For correct answers, add a visible green checkmark
-                      if (isCorrect) {
+                      if (isTrueCorrect) {
                         // Draw a green circle with checkmark
                         doc.setFillColor(...greenColor);
-                        doc.circle(22, y - 2, 2, 'F');
+                        doc.circle(margin + 2, y - 2, 2, 'F');
                         doc.setTextColor(1, 1, 1); // White
-                        doc.setFont('helvetica', 'bold');
-                        doc.text('✓', 21, y - 1, { align: 'center' });
-                        doc.setFont('helvetica', 'normal');
+                        doc.setFont(fontFamily, 'bold');
+                        doc.text('✓', margin + 1, y - 1, { align: 'center' });
+                        doc.setFont(fontFamily, 'normal');
                         doc.setTextColor(0, 0, 0); // Reset to black
                       }
                       
-                      // All options in the same font style
-                      doc.text(`${optionLetter}. ${option}`, 30, y);
-                      
+                      // True option
+                      doc.text('A. True', margin + 10, y);
                       y += 7;
-                    });
+                      
+                      // False option
+                      const isFalseCorrect = question.correctAnswer === "False";
+                      
+                      // For correct answers, add a visible green checkmark
+                      if (isFalseCorrect) {
+                        // Draw a green circle with checkmark
+                        doc.setFillColor(...greenColor);
+                        doc.circle(margin + 2, y - 2, 2, 'F');
+                        doc.setTextColor(1, 1, 1); // White
+                        doc.setFont(fontFamily, 'bold');
+                        doc.text('✓', margin + 1, y - 1, { align: 'center' });
+                        doc.setFont(fontFamily, 'normal');
+                        doc.setTextColor(0, 0, 0); // Reset to black
+                      }
+                      
+                      // False option
+                      doc.text('B. False', margin + 10, y);
+                      y += 7;
+                    } else if (Array.isArray(question.options) && question.options.length === 0 && question.correctAnswer === "null") {
+                      // Essay question
+                      doc.setFont(fontFamily, 'normal');
+                      const essayText = 'This is an essay question. Students should write a detailed response.';
+                      const wrappedEssayText = doc.splitTextToSize(essayText, textWidth - 10);
+                      doc.text(wrappedEssayText, margin + 10, y);
+                      y += wrappedEssayText.length * 7;
+                      
+                      // Add lines for writing
+                      for (let i = 0; i < 5; i++) {
+                        doc.setDrawColor(200, 200, 200); // Light gray
+                        doc.line(margin + 10, y + 5, pageWidth - margin, y + 5);
+                        y += 10;
+                      }
+                    } else if (question.options) {
+                      // Multiple choice question
+                      question.options.forEach((option, optIndex) => {
+                        // Check if we need a new page
+                        if (y > 270) {
+                          doc.addPage();
+                          y = 20;
+                        }
+                        
+                        const optionLetter = String.fromCharCode(65 + optIndex);
+                        const isCorrect = option === question.correctAnswer;
+                        
+                        // For correct answers, add a visible green checkmark
+                        if (isCorrect) {
+                          // Draw a green circle with checkmark
+                          doc.setFillColor(...greenColor);
+                          doc.circle(margin + 2, y - 2, 2, 'F');
+                          doc.setTextColor(1, 1, 1); // White
+                          doc.setFont(fontFamily, 'bold');
+                          doc.text('✓', margin + 1, y - 1, { align: 'center' });
+                          doc.setFont(fontFamily, 'normal');
+                          doc.setTextColor(0, 0, 0); // Reset to black
+                        }
+                        
+                        // All options in the same font style with text wrapping
+                        const optionText = `${optionLetter}. ${option}`;
+                        const wrappedOptionText = doc.splitTextToSize(optionText, textWidth - 10);
+                        doc.text(wrappedOptionText, margin + 10, y);
+                        y += wrappedOptionText.length * 7; // Adjust y position based on number of lines
+                      });
+                    }
+                    
+                    // Check if we need a new page for explanation
+                    if (y > 250) {
+                      doc.addPage();
+                      y = 20;
+                    }
                     
                     // Explanation
                     doc.setFontSize(11);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text('Explanation:', 20, y);
+                    doc.setFont(fontFamily, 'bold');
+                    doc.text('Explanation:', margin, y);
                     y += 7;
                     
-                    // Split explanation into lines
+                    // Explanation with text wrapping
+                    doc.setFont(fontFamily, 'normal');
                     const explanationLines = question.explanation.split('\n');
-                    doc.setFont('helvetica', 'normal');
                     explanationLines.forEach(line => {
-                      doc.text(line, 30, y);
-                      y += 7;
+                      // Check if we need a new page
+                      if (y > 270) {
+                        doc.addPage();
+                        y = 20;
+                      }
+                      
+                      const wrappedLine = doc.splitTextToSize(line, textWidth - 10);
+                      doc.text(wrappedLine, margin + 10, y);
+                      y += wrappedLine.length * 7; // Adjust y position based on number of lines
                     });
                     
                     // Add space between questions
