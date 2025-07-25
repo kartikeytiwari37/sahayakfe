@@ -11,6 +11,15 @@ function TeachingSession({ customPrompt, onBackToHome }) {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [volume, setVolume] = useState(0);
   const [currentTeacherMessage, setCurrentTeacherMessage] = useState(''); // For accumulating streaming response
+  const [chatHistory, setChatHistory] = useState([]); // Store complete chat history for video generation
+  const [videoGeneration, setVideoGeneration] = useState({
+    isGenerating: false,
+    operationName: null,
+    status: 'idle', // idle, generating-prompt, generating-video, polling, completed, error
+    progress: 0,
+    videoUrl: null,
+    error: null
+  });
   
   const socketRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -180,6 +189,15 @@ function TeachingSession({ customPrompt, onBackToHome }) {
       timestamp: new Date().toLocaleTimeString()
     };
     setMessages(prev => [...prev, message]);
+    
+    // Add to chat history for video generation (exclude system messages)
+    if (type === 'student' || type === 'teacher') {
+      setChatHistory(prev => [...prev, {
+        role: type === 'student' ? 'user' : 'assistant',
+        content: content,
+        timestamp: new Date().toISOString()
+      }]);
+    }
   };
 
   const sendTextMessage = () => {
@@ -463,6 +481,192 @@ function TeachingSession({ customPrompt, onBackToHome }) {
     }
   };
 
+  // Video Generation Functions
+  const generateVideo = async () => {
+    if (chatHistory.length === 0) {
+      addMessage('error', 'No conversation history available for video generation');
+      return;
+    }
+
+    setVideoGeneration(prev => ({
+      ...prev,
+      isGenerating: true,
+      status: 'generating-prompt',
+      progress: 10,
+      error: null,
+      videoUrl: null
+    }));
+
+    try {
+      // Step 1: Generate video prompt
+      const context = {
+        teachingPrompt: customPrompt,
+        chatHistory: chatHistory.slice(-10), // Last 10 messages for context
+        timestamp: new Date().toISOString()
+      };
+
+      const promptResponse = await fetch('http://localhost:8080/api/sahayak/video/generate-prompt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ context })
+      });
+
+      if (!promptResponse.ok) {
+        throw new Error('Failed to generate video prompt');
+      }
+
+      const promptData = await promptResponse.json();
+      
+      setVideoGeneration(prev => ({
+        ...prev,
+        status: 'generating-video',
+        progress: 30
+      }));
+
+      // Step 2: Generate video
+      const videoResponse = await fetch('http://localhost:8080/api/sahayak/video/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: promptData.prompt })
+      });
+
+      if (!videoResponse.ok) {
+        throw new Error('Failed to start video generation');
+      }
+
+      const videoData = await videoResponse.json();
+      
+      setVideoGeneration(prev => ({
+        ...prev,
+        operationName: videoData.operationName,
+        status: 'polling',
+        progress: 50
+      }));
+
+      // Step 3: Poll for completion
+      pollVideoStatus(videoData.operationName);
+
+    } catch (error) {
+      console.error('Video generation error:', error);
+      setVideoGeneration(prev => ({
+        ...prev,
+        isGenerating: false,
+        status: 'error',
+        error: error.message
+      }));
+      addMessage('error', `Video generation failed: ${error.message}`);
+    }
+  };
+
+  const pollVideoStatus = async (operationName) => {
+    const maxAttempts = 60; // 5 minutes max
+    let attempts = 0;
+
+      const poll = async () => {
+        try {
+          attempts++;
+          const response = await fetch(`http://localhost:8080/api/sahayak/video/status?operationName=${encodeURIComponent(operationName)}`);
+        
+        if (!response.ok) {
+          throw new Error('Failed to check video status');
+        }
+
+        const data = await response.json();
+        
+        if (data.done) {
+          // Video generation completed
+          setVideoGeneration(prev => ({
+            ...prev,
+            status: 'completed',
+            progress: 90
+          }));
+
+          // Download the video
+          downloadVideo(data.videoUri);
+        } else if (attempts >= maxAttempts) {
+          throw new Error('Video generation timeout');
+        } else {
+          // Update progress
+          const progress = Math.min(50 + (attempts / maxAttempts) * 40, 90);
+          setVideoGeneration(prev => ({
+            ...prev,
+            progress: progress
+          }));
+
+          // Continue polling
+          setTimeout(poll, 5000); // Poll every 5 seconds
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+        setVideoGeneration(prev => ({
+          ...prev,
+          isGenerating: false,
+          status: 'error',
+          error: error.message
+        }));
+        addMessage('error', `Video polling failed: ${error.message}`);
+      }
+    };
+
+    poll();
+  };
+
+  const downloadVideo = async (videoUri) => {
+    try {
+      const response = await fetch('http://localhost:8080/api/sahayak/video/download', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ videoUri })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download video');
+      }
+
+      const blob = await response.blob();
+      const videoUrl = URL.createObjectURL(blob);
+
+      setVideoGeneration(prev => ({
+        ...prev,
+        isGenerating: false,
+        status: 'completed',
+        progress: 100,
+        videoUrl: videoUrl
+      }));
+
+      addMessage('system', '🎬 Educational video generated successfully! Check the video player below.');
+    } catch (error) {
+      console.error('Video download error:', error);
+      setVideoGeneration(prev => ({
+        ...prev,
+        isGenerating: false,
+        status: 'error',
+        error: error.message
+      }));
+      addMessage('error', `Video download failed: ${error.message}`);
+    }
+  };
+
+  const resetVideoGeneration = () => {
+    if (videoGeneration.videoUrl) {
+      URL.revokeObjectURL(videoGeneration.videoUrl);
+    }
+    setVideoGeneration({
+      isGenerating: false,
+      operationName: null,
+      status: 'idle',
+      progress: 0,
+      videoUrl: null,
+      error: null
+    });
+  };
+
   return (
     <div className="teaching-session">
       <div className="session-header">
@@ -543,6 +747,14 @@ function TeachingSession({ customPrompt, onBackToHome }) {
             >
               {isScreenSharing ? '📱 Stop Sharing' : '📺 Share Screen'}
             </button>
+
+            <button
+              onClick={generateVideo}
+              disabled={!connected || videoGeneration.isGenerating || chatHistory.length === 0}
+              className={`media-btn video-btn ${videoGeneration.isGenerating ? 'generating' : ''}`}
+            >
+              {videoGeneration.isGenerating ? '🎬 Generating...' : '🎬 Generate Video'}
+            </button>
           </div>
 
           {isRecording && (
@@ -556,7 +768,81 @@ function TeachingSession({ customPrompt, onBackToHome }) {
               <span>Volume: {Math.round(volume * 100)}%</span>
             </div>
           )}
+
+          {videoGeneration.isGenerating && (
+            <div className="video-generation-progress">
+              <div className="progress-header">
+                <span className="progress-title">🎬 Generating Educational Video</span>
+                <span className="progress-percentage">{Math.round(videoGeneration.progress)}%</span>
+              </div>
+              <div className="progress-bar">
+                <div 
+                  className="progress-fill" 
+                  style={{ width: `${videoGeneration.progress}%` }}
+                ></div>
+              </div>
+              <div className="progress-status">
+                {videoGeneration.status === 'generating-prompt' && 'Creating video prompt...'}
+                {videoGeneration.status === 'generating-video' && 'Starting video generation...'}
+                {videoGeneration.status === 'polling' && 'AI is creating your video...'}
+                {videoGeneration.status === 'completed' && 'Finalizing video...'}
+              </div>
+            </div>
+          )}
         </div>
+
+        {videoGeneration.videoUrl && (
+          <div className="video-player-section">
+            <div className="video-header">
+              <h3>🎬 Generated Educational Video</h3>
+              <button 
+                className="reset-video-btn"
+                onClick={resetVideoGeneration}
+                title="Generate new video"
+              >
+                🔄 New Video
+              </button>
+            </div>
+            <div className="video-player-container">
+              <video 
+                controls 
+                className="generated-video"
+                src={videoGeneration.videoUrl}
+                poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='100%25' height='100%25' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='20' fill='%23666' text-anchor='middle' dy='.3em'%3E🎬 Educational Video%3C/text%3E%3C/svg%3E"
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+            <div className="video-actions">
+              <a 
+                href={videoGeneration.videoUrl} 
+                download="educational-video.mp4"
+                className="download-btn"
+              >
+                📥 Download Video
+              </a>
+            </div>
+          </div>
+        )}
+
+        {videoGeneration.error && (
+          <div className="video-error">
+            <div className="error-header">
+              <span className="error-icon">❌</span>
+              <span className="error-title">Video Generation Failed</span>
+            </div>
+            <div className="error-message">{videoGeneration.error}</div>
+            <button 
+              className="retry-btn"
+              onClick={() => {
+                resetVideoGeneration();
+                generateVideo();
+              }}
+            >
+              🔄 Try Again
+            </button>
+          </div>
+        )}
 
         <video 
           ref={videoRef} 
