@@ -104,7 +104,7 @@ function HomePage({ onSelectAgent }) {
       </div>
 
       <div className="agents-section">
-        <h2 className="section-title">🎪 New course</h2>
+        <h2 className="section-title">🎪 Learning Companions</h2>
         <div className="agents-grid">
           {agents.map(agent => (
             <div 
