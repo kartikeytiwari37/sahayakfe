@@ -37,35 +37,25 @@ function ExamEvaluator({ onBackToHome }) {
         teacherNotes
       };
 
-      let response;
-      
-      if (uploadedFile) {
-        console.log('Request payload with file:', {
-          metadata,
-          file: uploadedFile.name
-        });
-        
-        // If file is uploaded, use FormData for multipart/form-data
-        const formData = new FormData();
-        formData.append('metadata', JSON.stringify(metadata));
-        formData.append('file', uploadedFile);
-        
-        response = await fetch(apiEndpoint, {
-          method: 'POST',
-          body: formData,
-        });
-      } else {
-        console.log('Request payload without file:', { metadata });
-        
-        // If no file, use JSON
-        response = await fetch(apiEndpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ metadata }),
-        });
+      // Since file upload is now required, we always use FormData
+      if (!uploadedFile) {
+        throw new Error('Please upload a worksheet file to evaluate.');
       }
+
+      console.log('Request payload with file:', {
+        metadata,
+        file: uploadedFile.name
+      });
+      
+      // Use FormData for multipart/form-data to match backend API contract
+      const formData = new FormData();
+      formData.append('worksheetFile', uploadedFile); // Backend expects 'worksheetFile'
+      formData.append('metadata', JSON.stringify(metadata)); // Backend expects 'metadata' as string
+      
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        body: formData,
+      });
 
       if (!response.ok) {
         throw new Error(`API request failed with status ${response.status}`);
