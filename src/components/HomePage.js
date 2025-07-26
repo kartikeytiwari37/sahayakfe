@@ -25,7 +25,7 @@ function HomePage({ onSelectAgent }) {
     },
     {
       id: 'exam-taker',
-      name: 'Exam Taker',
+      name: 'Exam Creator',
       description: 'AI-Powered Examination System',
       icon: '📝',
       color: '#FF9800',
