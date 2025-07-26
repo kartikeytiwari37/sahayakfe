@@ -452,11 +452,20 @@
   color: #666666;
 }
 
+.toggle-label.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .toggle-label input[type="checkbox"] {
   margin-right: 0.5rem;
   width: 16px;
   height: 16px;
   cursor: pointer;
+}
+
+.toggle-label input[type="checkbox"]:disabled {
+  cursor: not-allowed;
 }
 
 .download-button, .print-button {
@@ -485,9 +494,21 @@
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
 }
 
-.download-button.with-answers:hover {
+.download-button.with-answers:hover:not(.disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+}
+
+.download-button.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: #cccccc;
+  box-shadow: none;
+}
+
+.download-button.disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .print-button {
