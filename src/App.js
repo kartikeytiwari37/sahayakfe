@@ -5,6 +5,7 @@ import KalamSir from './components/KalamSir';
 import TeachingSession from './components/TeachingSession';
 import './App.css';
 import ExamCreator from './ExamCreator';
+import ExamEvaluator from './ExamEvaluator';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
@@ -16,6 +17,8 @@ function App() {
       setCurrentView('kalam-sir');
     } else if (agentId === 'exam-taker') {
       setCurrentView('exam-creator');
+    } else if (agentId === 'exam-evaluator') {
+      setCurrentView('exam-evaluator');
     }
   };
 
@@ -53,6 +56,10 @@ function App() {
 
   if (currentView === 'exam-creator') {
     return <ExamCreator onBackToHome={handleBackToHome} />;
+  }
+
+  if (currentView === 'exam-evaluator') {
+    return <ExamEvaluator onBackToHome={handleBackToHome} />;
   }
 
   return null;

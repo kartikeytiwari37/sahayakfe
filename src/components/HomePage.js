@@ -24,6 +24,16 @@ function HomePage({ onSelectAgent }) {
       character: '🧑‍🏫'
     },
     {
+      id: 'exam-evaluator',
+      name: 'Exam Evaluator',
+      description: 'AI-Powered Worksheet Evaluation System',
+      icon: '📊',
+      color: '#4CAF50',
+      status: 'Available',
+      subjects: ['All Subjects'],
+      character: '👩‍💼'
+    },
+    {
       id: 'science-explorer',
       name: '🔬 Science Explorer',
       description: 'Discover amazing experiments and cool facts!',
@@ -113,6 +123,11 @@ function HomePage({ onSelectAgent }) {
               {agent.status === 'Available' && agent.id === 'exam-taker' && (
                 <div className="agent-features">
                   <span className="feature try-it-button" onClick={() => onSelectAgent(agent.id)}>🚀 Try it</span>
+                </div>
+              )}
+              {agent.status === 'Available' && agent.id === 'exam-evaluator' && (
+                <div className="agent-features">
+                  <span className="feature try-it-button" onClick={() => onSelectAgent(agent.id)}>📊 Try it</span>
                 </div>
               )}
             </div>
