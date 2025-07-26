@@ -18,8 +18,15 @@ function ExamEvaluator({ onBackToHome }) {
   const [uploadedFile, setUploadedFile] = useState(null);
   
   // Ques And Ans tab states
-  const [quesPdf, setQuesPdf] = useState(null);
-  const [ansPdf, setAnsPdf] = useState(null);
+  const [tab2StudentName, setTab2StudentName] = useState('');
+  const [tab2StudentId, setTab2StudentId] = useState('');
+  const [tab2Subject, setTab2Subject] = useState('');
+  const [tab2ExamTitle, setTab2ExamTitle] = useState('');
+  const [tab2EvaluationCriteria, setTab2EvaluationCriteria] = useState('moderate');
+  const [tab2AdditionalInstructions, setTab2AdditionalInstructions] = useState('');
+  const [tab2TeacherNotes, setTab2TeacherNotes] = useState('');
+  const [questionPaper, setQuestionPaper] = useState(null);
+  const [answerSheet, setAnswerSheet] = useState(null);
   
   // Common states
   const [loading, setLoading] = useState(false);
@@ -105,27 +112,27 @@ function ExamEvaluator({ onBackToHome }) {
     }
   };
 
-  const handleQuesPdfChange = (e) => {
+  const handleQuestionPaperChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.type === 'application/pdf') {
-        setQuesPdf(file);
+        setQuestionPaper(file);
         setError(null);
       } else {
-        setError('Please upload a PDF file for questions');
+        setError('Please upload a PDF file for question paper');
         e.target.value = '';
       }
     }
   };
 
-  const handleAnsPdfChange = (e) => {
+  const handleAnswerSheetChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.type === 'application/pdf') {
-        setAnsPdf(file);
+        setAnswerSheet(file);
         setError(null);
       } else {
-        setError('Please upload a PDF file for answers');
+        setError('Please upload a PDF file for answer sheet');
         e.target.value = '';
       }
     }
@@ -138,23 +145,36 @@ function ExamEvaluator({ onBackToHome }) {
     setResult(null);
 
     try {
-      const apiEndpoint = `${apiBaseUrl}/evaluate2`;
+      const apiEndpoint = `${apiBaseUrl}/evaluate-with-question-paper`;
       
       console.log('Making API call to:', apiEndpoint);
 
-      if (!quesPdf || !ansPdf) {
-        throw new Error('Please upload both question and answer PDF files.');
+      if (!questionPaper || !answerSheet) {
+        throw new Error('Please upload both question paper and answer sheet PDF files.');
       }
 
+      // Prepare the metadata object for Tab 2
+      const metadata = {
+        studentName: tab2StudentName,
+        studentId: tab2StudentId,
+        subject: tab2Subject,
+        examTitle: tab2ExamTitle,
+        evaluationCriteria: tab2EvaluationCriteria,
+        additionalInstructions: tab2AdditionalInstructions,
+        teacherNotes: tab2TeacherNotes
+      };
+
       console.log('Request payload with files:', {
-        quesPdf: quesPdf.name,
-        ansPdf: ansPdf.name
+        metadata,
+        questionPaper: questionPaper.name,
+        answerSheet: answerSheet.name
       });
       
       // Use FormData for multipart/form-data
       const formData = new FormData();
-      formData.append('quesPdf', quesPdf);
-      formData.append('ansPdf', ansPdf);
+      formData.append('metadata', JSON.stringify(metadata));
+      formData.append('questionPaper', questionPaper);
+      formData.append('answerSheet', answerSheet);
       
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -340,22 +360,110 @@ function ExamEvaluator({ onBackToHome }) {
         {activeTab === 'quesans' && (
           <div className="eval-form-container">
             <form onSubmit={handleQuesAnsSubmit}>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="tab2StudentName">Student Name</label>
+                  <input
+                    type="text"
+                    id="tab2StudentName"
+                    value={tab2StudentName}
+                    onChange={(e) => setTab2StudentName(e.target.value)}
+                    placeholder="e.g., Jane Smith"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="tab2StudentId">Student ID</label>
+                  <input
+                    type="text"
+                    id="tab2StudentId"
+                    value={tab2StudentId}
+                    onChange={(e) => setTab2StudentId(e.target.value)}
+                    placeholder="e.g., STU12345"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="tab2Subject">Subject</label>
+                  <input
+                    type="text"
+                    id="tab2Subject"
+                    value={tab2Subject}
+                    onChange={(e) => setTab2Subject(e.target.value)}
+                    placeholder="e.g., Science"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="tab2ExamTitle">Exam Title</label>
+                  <input
+                    type="text"
+                    id="tab2ExamTitle"
+                    value={tab2ExamTitle}
+                    onChange={(e) => setTab2ExamTitle(e.target.value)}
+                    placeholder="e.g., Science Mid-term Exam"
+                    required
+                  />
+                </div>
+              </div>
+
               <div className="form-group">
-                <label htmlFor="quesPdfUpload">Upload Questions PDF</label>
+                <label htmlFor="tab2EvaluationCriteria">Evaluation Criteria</label>
+                <select
+                  id="tab2EvaluationCriteria"
+                  value={tab2EvaluationCriteria}
+                  onChange={(e) => setTab2EvaluationCriteria(e.target.value)}
+                  required
+                >
+                  <option value="strict">Strict</option>
+                  <option value="moderate">Moderate</option>
+                  <option value="lenient">Lenient</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="tab2AdditionalInstructions">Additional Instructions</label>
+                <textarea
+                  id="tab2AdditionalInstructions"
+                  value={tab2AdditionalInstructions}
+                  onChange={(e) => setTab2AdditionalInstructions(e.target.value)}
+                  placeholder="e.g., Focus on conceptual understanding and proper use of formulas"
+                  rows="3"
+                ></textarea>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="tab2TeacherNotes">Teacher Notes</label>
+                <textarea
+                  id="tab2TeacherNotes"
+                  value={tab2TeacherNotes}
+                  onChange={(e) => setTab2TeacherNotes(e.target.value)}
+                  placeholder="e.g., Student has been struggling with force diagrams but shows good understanding of energy concepts"
+                  rows="3"
+                ></textarea>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="questionPaperUpload">Upload Question Paper (PDF)</label>
                 <input
                   type="file"
-                  id="quesPdfUpload"
+                  id="questionPaperUpload"
                   accept=".pdf"
-                  onChange={handleQuesPdfChange}
+                  onChange={handleQuestionPaperChange}
                   required
                 />
-                {quesPdf && (
+                {questionPaper && (
                   <div className="file-info">
-                    <p>Selected file: {quesPdf.name}</p>
+                    <p>Selected file: {questionPaper.name}</p>
                     <button 
                       type="button" 
                       className="remove-file" 
-                      onClick={() => setQuesPdf(null)}
+                      onClick={() => setQuestionPaper(null)}
                     >
                       Remove
                     </button>
@@ -364,21 +472,21 @@ function ExamEvaluator({ onBackToHome }) {
               </div>
 
               <div className="form-group">
-                <label htmlFor="ansPdfUpload">Upload Answers PDF</label>
+                <label htmlFor="answerSheetUpload">Upload Answer Sheet (PDF)</label>
                 <input
                   type="file"
-                  id="ansPdfUpload"
+                  id="answerSheetUpload"
                   accept=".pdf"
-                  onChange={handleAnsPdfChange}
+                  onChange={handleAnswerSheetChange}
                   required
                 />
-                {ansPdf && (
+                {answerSheet && (
                   <div className="file-info">
-                    <p>Selected file: {ansPdf.name}</p>
+                    <p>Selected file: {answerSheet.name}</p>
                     <button 
                       type="button" 
                       className="remove-file" 
-                      onClick={() => setAnsPdf(null)}
+                      onClick={() => setAnswerSheet(null)}
                     >
                       Remove
                     </button>
