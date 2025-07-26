@@ -409,8 +409,147 @@ function ExamEvaluator({ onBackToHome }) {
         {result && (
           <div className="result-container">
             <h3>Evaluation Results</h3>
-            <div className="evaluation-result">
-              <pre>{JSON.stringify(result, null, 2)}</pre>
+            
+            {/* Formatted Results Display for Tab 1 */}
+            {activeTab === 'worksheet' && (
+              <div className="evaluation-summary">
+                <div className="summary-header">
+                  <div className="student-info">
+                    <h4>📋 Student Information</h4>
+                    <div className="info-grid">
+                      <div className="info-item">
+                        <span className="label">Name:</span>
+                        <span className="value">{studentName}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="label">ID:</span>
+                        <span className="value">{studentId}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="label">Subject:</span>
+                        <span className="value">{subject}</span>
+                      </div>
+                      <div className="info-item">
+                        <span className="label">Worksheet:</span>
+                        <span className="value">{worksheetTitle}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="score-summary">
+                    <div className={`score-circle ${
+                      result.evaluation?.percentage >= 70 ? 'score-green' : 
+                      result.evaluation?.percentage >= 30 ? 'score-amber' : 
+                      'score-red'
+                    }`}>
+                      <div className="score-value">
+                        {result.evaluation?.totalScore && result.evaluation?.maxPossibleScore 
+                          ? `${result.evaluation.totalScore}/${result.evaluation.maxPossibleScore}`
+                          : result.evaluation?.totalScore || result.evaluation?.score || 'N/A'
+                        }
+                      </div>
+                      <div className="score-label">Total Score</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="evaluation-details">
+                  <div className="detail-section">
+                    <h5>📊 Evaluation Summary</h5>
+                    <div className="summary-stats">
+                      <div className="stat-item">
+                        <span className="stat-label">Criteria:</span>
+                        <span className="stat-value">{evaluationCriteria}</span>
+                      </div>
+                      {result.evaluation?.totalQuestions && (
+                        <div className="stat-item">
+                          <span className="stat-label">Questions:</span>
+                          <span className="stat-value">{result.evaluation.totalQuestions}</span>
+                        </div>
+                      )}
+                      {result.evaluation?.correctAnswers && (
+                        <div className="stat-item">
+                          <span className="stat-label">Correct:</span>
+                          <span className="stat-value">{result.evaluation.correctAnswers}</span>
+                        </div>
+                      )}
+                      {result.evaluation?.percentage && (
+                        <div className="stat-item">
+                          <span className="stat-label">Percentage:</span>
+                          <span className="stat-value">{result.evaluation.percentage}%</span>
+                        </div>
+                      )}
+                    </div>
+                    {result.evaluation?.overallFeedback && (
+                      <div className="feedback-content" style={{ marginTop: '1rem' }}>
+                        {result.evaluation.overallFeedback}
+                      </div>
+                    )}
+                  </div>
+
+                  {result.evaluation?.areasForImprovement && (
+                    <div className="detail-section">
+                      <h5>📈 Areas for Improvement</h5>
+                      <div className="improvements-content">
+                        {Array.isArray(result.evaluation.areasForImprovement) ? (
+                          <ul>
+                            {result.evaluation.areasForImprovement.map((improvement, index) => (
+                              <li key={index}>{improvement}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p>{result.evaluation.areasForImprovement}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {result.evaluation?.strengths && (
+                    <div className="detail-section">
+                      <h5>✅ Strengths</h5>
+                      <div className="strengths-content">
+                        {Array.isArray(result.evaluation.strengths) ? (
+                          <ul>
+                            {result.evaluation.strengths.map((strength, index) => (
+                              <li key={index}>{strength}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p>{result.evaluation.strengths}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {additionalInstructions && (
+                    <div className="detail-section">
+                      <h5>📝 Additional Instructions</h5>
+                      <div className="instructions-content">
+                        {additionalInstructions}
+                      </div>
+                    </div>
+                  )}
+
+                  {teacherNotes && (
+                    <div className="detail-section">
+                      <h5>👨‍🏫 Teacher Notes</h5>
+                      <div className="notes-content">
+                        {teacherNotes}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Raw JSON Display */}
+            <div className="raw-results-toggle">
+              <details>
+                <summary>View Details</summary>
+                <div className="evaluation-result">
+                  <pre>{JSON.stringify(result, null, 2)}</pre>
+                </div>
+              </details>
             </div>
           </div>
         )}
