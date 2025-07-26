@@ -220,73 +220,77 @@ function ExamCreator({ onBackToHome }) {
       <main className="exam-creator-main">
         <div className="exam-form-container">
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="subject">Subject</label>
-              <input
-                type="text"
-                id="subject"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g., Mathematics, Science, History"
-                required
-              />
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="subject">Subject</label>
+                <input
+                  type="text"
+                  id="subject"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="e.g., Mathematics, Science, History"
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="grade">Grade/Level</label>
+                <input
+                  type="text"
+                  id="grade"
+                  value={grade}
+                  onChange={(e) => setGrade(e.target.value)}
+                  placeholder="e.g., 5th Grade, High School, College"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="examType">Exam Type</label>
+                <select
+                  id="examType"
+                  value={examType}
+                  onChange={(e) => setExamType(e.target.value)}
+                  required
+                >
+                  <option value="multiple-choice">Multiple Choices</option>
+                  <option value="true-false">True/False</option>
+                  <option value="short-answer">Short Answer Questions</option>
+                  <option value="essay">Essay Questions</option>
+                  <option value="mixed">Mixed</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="numQuestions">Number of Questions</label>
+                <input
+                  type="number"
+                  id="numQuestions"
+                  value={numQuestions}
+                  onChange={(e) => {
+                    // Ensure the value is a valid number and within range
+                    const value = e.target.value;
+                    if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 50)) {
+                      setNumQuestions(value === '' ? '' : parseInt(value));
+                    }
+                  }}
+                  onBlur={() => {
+                    // Ensure we have a valid number when the field loses focus
+                    if (numQuestions === '' || isNaN(numQuestions)) {
+                      setNumQuestions(5); // Default to 5 if empty or invalid
+                    }
+                  }}
+                  min="1"
+                  max="50"
+                  required
+                />
+              </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="grade">Grade/Level</label>
-              <input
-                type="text"
-                id="grade"
-                value={grade}
-                onChange={(e) => setGrade(e.target.value)}
-                placeholder="e.g., 5th Grade, High School, College"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="examType">Exam Type</label>
-              <select
-                id="examType"
-                value={examType}
-                onChange={(e) => setExamType(e.target.value)}
-                required
-              >
-                <option value="multiple-choice">Multiple Choices</option>
-                <option value="true-false">True/False</option>
-                <option value="short-answer">Short Answer Questions</option>
-                <option value="essay">Essay Questions</option>
-                <option value="mixed">Mixed</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="numQuestions">Number of Questions</label>
-              <input
-                type="number"
-                id="numQuestions"
-                value={numQuestions}
-                onChange={(e) => {
-                  // Ensure the value is a valid number and within range
-                  const value = e.target.value;
-                  if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 50)) {
-                    setNumQuestions(value === '' ? '' : parseInt(value));
-                  }
-                }}
-                onBlur={() => {
-                  // Ensure we have a valid number when the field loses focus
-                  if (numQuestions === '' || isNaN(numQuestions)) {
-                    setNumQuestions(5); // Default to 5 if empty or invalid
-                  }
-                }}
-                min="1"
-                max="50"
-                required
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="pdfUpload">Upload PDF (Optional)</label>
+              <label htmlFor="pdfUpload">Sample Chapter/Questions (Optional)</label>
               <input
                 type="file"
                 id="pdfUpload"
