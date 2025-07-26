@@ -54,6 +54,40 @@
   width: 100%;
 }
 
+.tab-navigation {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 0;
+}
+
+.tab-button {
+  padding: 1rem 2rem;
+  border: none;
+  background: transparent;
+  color: #666666;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 10px 10px 0 0;
+  transition: all 0.3s ease;
+  position: relative;
+  border-bottom: 3px solid transparent;
+}
+
+.tab-button:hover {
+  background: #f8f9fa;
+  color: #333333;
+}
+
+.tab-button.active {
+  background: #ffffff;
+  color: #4CAF50;
+  border-bottom: 3px solid #4CAF50;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
 .eval-form-container {
   background: #ffffff;
   border-radius: 20px;
@@ -248,6 +282,24 @@
   
   .exam-evaluator-main {
     padding: 1rem;
+  }
+  
+  .tab-navigation {
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+  }
+  
+  .tab-button {
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border-bottom: none;
+    text-align: center;
+  }
+  
+  .tab-button.active {
+    border-bottom: none;
+    border-left: 4px solid #4CAF50;
   }
   
   .eval-form-container,
