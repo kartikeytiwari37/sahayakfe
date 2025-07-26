@@ -229,44 +229,60 @@ export const ExamResult = ({ result, activeQuestion, handleQuestionChange, gener
       </div>
       
       <div className="result-actions">
-        <div className="toggle-controls">
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={displayAnswers}
-              onChange={() => window.dispatchEvent(new CustomEvent('toggleAnswers'))}
-            />
-            Show Answers
-          </label>
+        {/* Determine if the exam type is ESSAY to disable certain buttons */}
+        {(() => {
+          const examType = result.examData.examType === "MIXED" 
+            ? result.examData.questions[activeQuestion].questionType 
+            : getExamTypeFromResponse(result.examData);
           
-          <label className="toggle-label">
-            <input
-              type="checkbox"
-              checked={displayExplanation}
-              onChange={() => window.dispatchEvent(new CustomEvent('toggleExplanation'))}
-            />
-            Show Explanations
-          </label>
-        </div>
-        <button 
-          className="download-button"
-          onClick={() => {
-            // Create a new PDF document - Student version (no answers)
-            generateExamPDF(result, result.examData.subject, false, displayExplanation);
-          }}
-        >
-          Generate Exam Sheet
-        </button>
-        
-        <button 
-          className="download-button with-answers"
-          onClick={() => {
-            // Create a new PDF document - Teacher version (with answers)
-            generateExamPDF(result, result.examData.subject, true, displayExplanation);
-          }}
-        >
-          Generate Exam Sheet with Answers
-        </button>
+          const isEssayType = examType === "ESSAY";
+          
+          return (
+            <>
+              <div className="toggle-controls">
+                <label className={`toggle-label ${isEssayType ? 'disabled' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={displayAnswers}
+                    onChange={() => window.dispatchEvent(new CustomEvent('toggleAnswers'))}
+                    disabled={isEssayType}
+                  />
+                  Show Answers
+                </label>
+                
+                <label className={`toggle-label ${isEssayType ? 'disabled' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={displayExplanation}
+                    onChange={() => window.dispatchEvent(new CustomEvent('toggleExplanation'))}
+                    disabled={isEssayType}
+                  />
+                  Show Explanations
+                </label>
+              </div>
+              <button 
+                className="download-button"
+                onClick={() => {
+                  // Create a new PDF document - Student version (no answers)
+                  generateExamPDF(result, result.examData.subject, false, displayExplanation);
+                }}
+              >
+                Generate Exam Sheet
+              </button>
+              
+              <button 
+                className={`download-button with-answers ${isEssayType ? 'disabled' : ''}`}
+                onClick={() => {
+                  // Create a new PDF document - Teacher version (with answers)
+                  generateExamPDF(result, result.examData.subject, true, displayExplanation);
+                }}
+                disabled={isEssayType}
+              >
+                Generate Exam Sheet with Answers
+              </button>
+            </>
+          );
+        })()}
       </div>
     </div>
   );
