@@ -3,18 +3,23 @@ import SockJS from 'sockjs-client';
 import HomePage from './components/HomePage';
 import KalamSir from './components/KalamSir';
 import TeachingSession from './components/TeachingSession';
+import Udaan from './components/Udaan';
+import UdaanSession from './components/UdaanSession';
 import './App.css';
 import ExamCreator from './ExamCreator';
 import ExamEvaluator from './ExamEvaluator';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('home');
-  const [currentView, setCurrentView] = useState('home'); // home, kalam-sir, teaching-session
+  const [currentView, setCurrentView] = useState('home'); // home, kalam-sir, teaching-session, udaan, udaan-session
   const [customPrompt, setCustomPrompt] = useState('');
+  const [udaanPrompt, setUdaanPrompt] = useState('');
 
   const handleSelectAgent = (agentId) => {
     if (agentId === 'kalam-sir') {
       setCurrentView('kalam-sir');
+    } else if (agentId === 'udaan') {
+      setCurrentView('udaan');
     } else if (agentId === 'exam-taker') {
       setCurrentView('exam-creator');
     } else if (agentId === 'exam-evaluator') {
@@ -25,11 +30,17 @@ function App() {
   const handleBackToHome = () => {
     setCurrentView('home');
     setCustomPrompt('');
+    setUdaanPrompt('');
   };
 
   const handleStartTeaching = (generatedPrompt) => {
     setCustomPrompt(generatedPrompt);
     setCurrentView('teaching-session');
+  };
+
+  const handleStartUdaanSession = (generatedPrompt) => {
+    setUdaanPrompt(generatedPrompt);
+    setCurrentView('udaan-session');
   };
 
   if (currentView === 'home') {
@@ -41,6 +52,24 @@ function App() {
       <KalamSir
         onBackToHome={handleBackToHome}
         onStartTeaching={handleStartTeaching}
+      />
+    );
+  }
+
+  if (currentView === 'udaan') {
+    return (
+      <Udaan
+        onBackToHome={handleBackToHome}
+        onStartUdaanSession={handleStartUdaanSession}
+      />
+    );
+  }
+
+  if (currentView === 'udaan-session') {
+    return (
+      <UdaanSession
+        generatedPrompt={udaanPrompt}
+        onBackToHome={handleBackToHome}
       />
     );
   }
