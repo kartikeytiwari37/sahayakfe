@@ -14,6 +14,16 @@ function HomePage({ onSelectAgent }) {
       character: '👨‍🚀'
     },
     {
+      id: 'udaan',
+      name: '🌟 Udaan',
+      description: 'Create inspiring future roadmaps and career plans!',
+      icon: '🚀',
+      color: '#E91E63',
+      status: 'Available',
+      subjects: ['Career Planning', 'Future Goals', 'Motivation'],
+      character: '🎯'
+    },
+    {
       id: 'exam-taker',
       name: 'Exam Taker',
       description: 'AI-Powered Examination System',
