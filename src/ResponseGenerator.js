@@ -40,7 +40,7 @@ export const getExamTypeFromResponse = (examData) => {
 };
 
 // Component to render the exam result
-export const ExamResult = ({ result, activeQuestion, handleQuestionChange, generateExamPDF, displayExplanation }) => {
+export const ExamResult = ({ result, activeQuestion, handleQuestionChange, generateExamPDF, displayExplanation, displayAnswers }) => {
   if (!result) return null;
   
   return (
@@ -130,20 +130,20 @@ export const ExamResult = ({ result, activeQuestion, handleQuestionChange, gener
                 return (
                   <div className="true-false-options">
                     <div 
-                      className={`option-item ${result.examData.questions[activeQuestion].correctAnswer === "True" ? 'correct' : ''}`}
+                      className={`option-item ${result.examData.questions[activeQuestion].correctAnswer === "True" && displayAnswers ? 'correct' : ''}`}
                     >
                       <span className="option-marker">A.</span>
                       <span className="option-text">True</span>
-                      {result.examData.questions[activeQuestion].correctAnswer === "True" && (
+                      {result.examData.questions[activeQuestion].correctAnswer === "True" && displayAnswers && (
                         <span className="correct-marker">✓</span>
                       )}
                     </div>
                     <div 
-                      className={`option-item ${result.examData.questions[activeQuestion].correctAnswer === "False" ? 'correct' : ''}`}
+                      className={`option-item ${result.examData.questions[activeQuestion].correctAnswer === "False" && displayAnswers ? 'correct' : ''}`}
                     >
                       <span className="option-marker">B.</span>
                       <span className="option-text">False</span>
-                      {result.examData.questions[activeQuestion].correctAnswer === "False" && (
+                      {result.examData.questions[activeQuestion].correctAnswer === "False" && displayAnswers && (
                         <span className="correct-marker">✓</span>
                       )}
                     </div>
@@ -156,10 +156,12 @@ export const ExamResult = ({ result, activeQuestion, handleQuestionChange, gener
                     <div className="essay-prompt">
                       <p>This is an essay question. Students should write a detailed response addressing the prompt above.</p>
                     </div>
-                    <div className="essay-answer correct">
-                      <div className="answer-label">Model Answer:</div>
-                      <div className="answer-text">{result.examData.questions[activeQuestion].correctAnswer}</div>
-                    </div>
+                    {displayAnswers && (
+                      <div className="essay-answer correct">
+                        <div className="answer-label">Model Answer:</div>
+                        <div className="answer-text">{result.examData.questions[activeQuestion].correctAnswer}</div>
+                      </div>
+                    )}
                   </div>
                 );
               } else if (questionType === "SHORT_ANSWER") {
@@ -169,10 +171,12 @@ export const ExamResult = ({ result, activeQuestion, handleQuestionChange, gener
                     <div className="short-answer-prompt">
                       <p>This is a short answer question. Students should write a brief, specific response.</p>
                     </div>
-                    <div className="short-answer correct">
-                      <div className="answer-label">Correct Answer:</div>
-                      <div className="answer-text">{result.examData.questions[activeQuestion].correctAnswer}</div>
-                    </div>
+                    {displayAnswers && (
+                      <div className="short-answer correct">
+                        <div className="answer-label">Correct Answer:</div>
+                        <div className="answer-text">{result.examData.questions[activeQuestion].correctAnswer}</div>
+                      </div>
+                    )}
                     <div className="answer-space">
                       <div className="answer-line"></div>
                     </div>
@@ -185,13 +189,13 @@ export const ExamResult = ({ result, activeQuestion, handleQuestionChange, gener
                     {result.examData.questions[activeQuestion].options.map((option, index) => (
                       <div 
                         key={index} 
-                        className={`option-item ${option === result.examData.questions[activeQuestion].correctAnswer ? 'correct' : ''}`}
-                      >
-                        <span className="option-marker">{String.fromCharCode(65 + index)}.</span>
-                        <span className="option-text">{option}</span>
-                        {option === result.examData.questions[activeQuestion].correctAnswer && (
-                          <span className="correct-marker">✓</span>
-                        )}
+                      className={`option-item ${option === result.examData.questions[activeQuestion].correctAnswer && displayAnswers ? 'correct' : ''}`}
+                    >
+                      <span className="option-marker">{String.fromCharCode(65 + index)}.</span>
+                      <span className="option-text">{option}</span>
+                      {option === result.examData.questions[activeQuestion].correctAnswer && displayAnswers && (
+                        <span className="correct-marker">✓</span>
+                      )}
                       </div>
                     ))}
                   </div>
@@ -225,7 +229,16 @@ export const ExamResult = ({ result, activeQuestion, handleQuestionChange, gener
       </div>
       
       <div className="result-actions">
-        <div className="explanation-toggle">
+        <div className="toggle-controls">
+          <label className="toggle-label">
+            <input
+              type="checkbox"
+              checked={displayAnswers}
+              onChange={() => window.dispatchEvent(new CustomEvent('toggleAnswers'))}
+            />
+            Show Answers
+          </label>
+          
           <label className="toggle-label">
             <input
               type="checkbox"

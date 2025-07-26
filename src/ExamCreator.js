@@ -12,22 +12,30 @@ function ExamCreator({ onBackToHome }) {
   const [grade, setGrade] = useState('');
   const [examType, setExamType] = useState('multiple-choice');
   const [numQuestions, setNumQuestions] = useState(10);
+  const [pdfFile, setPdfFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [activeQuestion, setActiveQuestion] = useState(0);
   const [displayExplanation, setDisplayExplanation] = useState(false);
+  const [displayAnswers, setDisplayAnswers] = useState(false); // Default to hiding answers
 
-  // Add event listener for toggleExplanation event
+  // Add event listeners for toggle events
   React.useEffect(() => {
     const handleToggleExplanation = () => {
       setDisplayExplanation(prev => !prev);
     };
     
+    const handleToggleAnswers = () => {
+      setDisplayAnswers(prev => !prev);
+    };
+    
     window.addEventListener('toggleExplanation', handleToggleExplanation);
+    window.addEventListener('toggleAnswers', handleToggleAnswers);
     
     return () => {
       window.removeEventListener('toggleExplanation', handleToggleExplanation);
+      window.removeEventListener('toggleAnswers', handleToggleAnswers);
     };
   }, []);
 
@@ -41,10 +49,10 @@ function ExamCreator({ onBackToHome }) {
     // For demo purposes, we'll use mock data since the actual API might not be available
     // In a real application, this would be replaced with the actual API call
     try {
-      // Make the actual API call to create an exam
-      const apiUrl = `${apiBaseUrl}/create`;
+      // Determine which API endpoint to use based on PDF upload
+      const apiEndpoint = pdfFile ? `${apiBaseUrl}/createWithPdf` : `${apiBaseUrl}/create`;
       
-      console.log('Making API call to:', apiUrl);
+      console.log('Making API call to:', apiEndpoint);
       // Convert examType to uppercase enum format
       const examTypeEnum = (() => {
         switch(examType) {
@@ -57,27 +65,55 @@ function ExamCreator({ onBackToHome }) {
         }
       })();
       
-      console.log('Request payload:', {
-        subject,
-        gradeLevel: grade,
-        examType: examTypeEnum,
-        numberOfQuestions: numQuestions,
-        customPrompt: prompt
-      });
+      let response;
       
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      if (pdfFile) {
+        console.log('Request payload with PDF:', {
+          subject,
+          gradeLevel: grade,
+          examType: examTypeEnum,
+          numberOfQuestions: numQuestions,
+          customPrompt: prompt,
+          pdfFile: pdfFile.name
+        });
+        
+        // If PDF is uploaded, use FormData for multipart/form-data with the createWithPdf endpoint
+        const formData = new FormData();
+        formData.append('subject', subject);
+        formData.append('gradeLevel', grade);
+        formData.append('examType', examTypeEnum);
+        formData.append('numberOfQuestions', numQuestions);
+        formData.append('customPrompt', prompt);
+        formData.append('pdfFile', pdfFile);
+        
+        response = await fetch(apiEndpoint, {
+          method: 'POST',
+          body: formData,
+        });
+      } else {
+        console.log('Request payload without PDF:', {
           subject,
           gradeLevel: grade,
           examType: examTypeEnum,
           numberOfQuestions: numQuestions,
           customPrompt: prompt
-        }),
-      });
+        });
+        
+        // If no PDF, use JSON with the original create endpoint
+        response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            subject,
+            gradeLevel: grade,
+            examType: examTypeEnum,
+            numberOfQuestions: numQuestions,
+            customPrompt: prompt
+          }),
+        });
+      }
 
       if (!response.ok) {
         throw new Error(`API request failed with status ${response.status}`);
@@ -249,6 +285,28 @@ function ExamCreator({ onBackToHome }) {
               />
             </div>
 
+            <div className="form-group">
+              <label htmlFor="pdfUpload">Upload PDF (Optional)</label>
+              <input
+                type="file"
+                id="pdfUpload"
+                accept=".pdf"
+                onChange={(e) => setPdfFile(e.target.files[0] || null)}
+              />
+              {pdfFile && (
+                <div className="file-info">
+                  <p>Selected file: {pdfFile.name}</p>
+                  <button 
+                    type="button" 
+                    className="remove-file" 
+                    onClick={() => setPdfFile(null)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="form-group prompt-group">
               <label htmlFor="prompt">Prompt (Additional Instructions)</label>
               <textarea
@@ -287,6 +345,7 @@ function ExamCreator({ onBackToHome }) {
             handleQuestionChange={handleQuestionChange} 
             generateExamPDF={generateExamPDF}
             displayExplanation={displayExplanation}
+            displayAnswers={displayAnswers}
           />
         )}
       </main>
