@@ -438,7 +438,9 @@
   align-items: center;
 }
 
-.explanation-toggle {
+.toggle-controls {
+  display: flex;
+  gap: 1.5rem;
   margin-right: 1rem;
 }
 
@@ -503,7 +505,9 @@
 }
 
 @media (max-width: 768px) {
-  .explanation-toggle {
+  .toggle-controls {
+    flex-direction: column;
+    gap: 0.5rem;
     margin-right: 0;
     margin-bottom: 1rem;
     width: 100%;
