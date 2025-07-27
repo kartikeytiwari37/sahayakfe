@@ -312,7 +312,7 @@ function ExamCreator({ onBackToHome }) {
             </div>
 
             <div className="form-group prompt-group">
-              <label htmlFor="prompt">Prompt (Additional Instructions)</label>
+              <label htmlFor="prompt">Additional Instructions (Prompt)</label>
               <textarea
                 id="prompt"
                 value={prompt}
