@@ -12,14 +12,14 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  background-color: #ffffff;
+  background-color: #E7E9F3;
 }
 
 .App {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
+  background-color: #E7E9F3;
   color: #333333;
   position: relative;
 }
