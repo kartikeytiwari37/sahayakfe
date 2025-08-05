@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SockJS from 'sockjs-client';
+import AgentHeader from './AgentHeader';
 import './TeachingSession.css';
 
 function TeachingSession({ customPrompt, onBackToHome }) {
@@ -28,6 +29,7 @@ function TeachingSession({ customPrompt, onBackToHome }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+  const chatMessagesRef = useRef(null);
 
   // Audio streaming setup
   const audioContextRef = useRef(null);
@@ -59,7 +61,7 @@ function TeachingSession({ customPrompt, onBackToHome }) {
     addMessage('system', 'Connecting to your personalized AI teacher...');
     
     try {
-      const socket = new SockJS('http://localhost:8080/sahayak-teacher');
+      const socket = new SockJS('https://sahayak-backend-199913799544.us-central1.run.app/sahayak-teacher');
       
       socket.onopen = () => {
         console.log('Connected to Sahayak Teacher');
@@ -164,6 +166,13 @@ function TeachingSession({ customPrompt, onBackToHome }) {
                 });
               }
               
+              // Auto-scroll to bottom when teacher message is updated
+              setTimeout(() => {
+                if (chatMessagesRef.current) {
+                  chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+                }
+              }, 50);
+              
               return messages;
             });
             
@@ -198,6 +207,13 @@ function TeachingSession({ customPrompt, onBackToHome }) {
         timestamp: new Date().toISOString()
       }]);
     }
+    
+    // Auto-scroll to bottom when new message is added
+    setTimeout(() => {
+      if (chatMessagesRef.current) {
+        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+      }
+    }, 100);
   };
 
   const sendTextMessage = () => {
@@ -505,7 +521,7 @@ function TeachingSession({ customPrompt, onBackToHome }) {
         timestamp: new Date().toISOString()
       };
 
-      const promptResponse = await fetch('http://localhost:8080/api/sahayak/video/generate-prompt', {
+      const promptResponse = await fetch('https://sahayak-backend-199913799544.us-central1.run.app/api/sahayak/video/generate-prompt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -526,7 +542,7 @@ function TeachingSession({ customPrompt, onBackToHome }) {
       }));
 
       // Step 2: Generate video
-      const videoResponse = await fetch('http://localhost:8080/api/sahayak/video/generate', {
+      const videoResponse = await fetch('https://sahayak-backend-199913799544.us-central1.run.app/api/sahayak/video/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -569,7 +585,7 @@ function TeachingSession({ customPrompt, onBackToHome }) {
       const poll = async () => {
         try {
           attempts++;
-          const response = await fetch(`http://localhost:8080/api/sahayak/video/status?operationName=${encodeURIComponent(operationName)}`);
+          const response = await fetch(`https://sahayak-backend-199913799544.us-central1.run.app/api/sahayak/video/status?operationName=${encodeURIComponent(operationName)}`);
         
         if (!response.ok) {
           throw new Error('Failed to check video status');
@@ -617,7 +633,7 @@ function TeachingSession({ customPrompt, onBackToHome }) {
 
   const downloadVideo = async (videoUri) => {
     try {
-      const response = await fetch('http://localhost:8080/api/sahayak/video/download', {
+      const response = await fetch('https://sahayak-backend-199913799544.us-central1.run.app/api/sahayak/video/download', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -669,199 +685,203 @@ function TeachingSession({ customPrompt, onBackToHome }) {
 
   return (
     <div className="teaching-session">
-      <div className="session-header">
-        <div className="session-info">
-          <div className="teacher-avatar">🎓</div>
-          <div className="session-details">
-            <h2>Teaching Session</h2>
-            <p>Personalized AI Teacher</p>
-          </div>
-        </div>
-        <div className="session-controls">
-          <button className="back-to-home-btn" onClick={onBackToHome}>
-            ← Back to Home
-          </button>
-          <div className="connection-status">
-            {connected ? (
-              <span className="status connected">● Connected</span>
-            ) : connecting ? (
-              <span className="status connecting">● Connecting...</span>
-            ) : (
-              <span className="status disconnected">● Disconnected</span>
-            )}
-          </div>
-        </div>
-      </div>
+      <AgentHeader
+        agentName="AI Teacher"
+        agentDescription="Personalized Teaching Assistant"
+        agentIcon="🎓"
+        onBackToHome={onBackToHome}
+        backButtonText="← Back to Home"
+      />
 
       <div className="session-content">
-        <div className="main-content">
-          <div className="chat-section">
-            <div className="chat-header">
-              <h3>💬 Chat with Your AI Teacher</h3>
-              <p>Ask questions, get explanations, and learn interactively</p>
-            </div>
-
-            <div className="messages-container">
-              {messages.map(message => (
-                <div key={message.id} className={`message ${message.type}`}>
-                  <div className="message-content">
-                    <strong>
-                      {message.type === 'student' ? 'You' : 
-                       message.type === 'teacher' ? 'AI Teacher' : 
-                       message.type === 'system' ? 'System' : 'Error'}:
-                    </strong>
-                    <span>{message.content}</span>
+        <div className="content-wrapper">
+          {/* Main Content Grid */}
+          <div className="main-content-grid">
+            {/* Chat Section */}
+            <div className="chat-section">
+              <div className="chat-header">
+                <h3>💬 Chat with Your AI Teacher</h3>
+                <div className="connection-status">
+                  <div className={`status-dot ${connected ? 'connected' : 'disconnected'}`}></div>
+                  <span>{connected ? 'Connected' : connecting ? 'Connecting...' : 'Disconnected'}</span>
+                </div>
+              </div>
+              
+              <div className="chat-messages" ref={chatMessagesRef}>
+                {messages.map(message => (
+                  <div key={message.id} className={`chat-message ${message.type === "student" ? "user" : message.type }`}>
+                    <div className="message-avatar">
+                      {message.type === 'student' ? '👤' : 
+                       message.type === 'teacher' ? '🎓' : 
+                       message.type === 'system' ? '⚙️' : '❌'}
+                    </div>
+                    <div className="message-content">
+                      <div className="message-sender">
+                        {message.type === 'student' ? 'You' : 
+                         message.type === 'teacher' ? 'AI Teacher' : 
+                         message.type === 'system' ? 'System' : 'Error'}
+                        <span className="message-timestamp">{message.timestamp}</span>
+                      </div>
+                      <div className="message-text">{message.content}</div>
+                    </div>
                   </div>
-                  <div className="message-time">{message.timestamp}</div>
+                ))}
+              </div>
+
+              <div className="chat-input-section">
+                <div className="chat-input-wrapper">
+                  <input
+                    type="text"
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && sendTextMessage()}
+                    placeholder="Ask your personalized teacher a question..."
+                    disabled={!connected}
+                    className="chat-input"
+                  />
+                  <button 
+                    onClick={sendTextMessage} 
+                    disabled={!connected || !inputText.trim()}
+                    className="send-button"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="currentColor"/>
+                    </svg>
+                  </button>
                 </div>
-              ))}
+              </div>
             </div>
 
-            <div className="input-section">
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendTextMessage()}
-                placeholder="Ask your personalized teacher a question..."
-                disabled={!connected}
-              />
-              <button 
-                className="send-btn"
-                onClick={sendTextMessage} 
-                disabled={!connected || !inputText.trim()}
-              >
-                Send
-              </button>
+            {/* Sidebar Section */}
+            <div className="sidebar-section">
+              <div className="controls-section">
+                <div className="connection-panel">
+                  <h4 className="sidebar-title">🎤 Voice & Screen</h4>
+                  <div className="connection-buttons">
+                    <button
+                      onClick={isRecording ? stopRecording : startRecording}
+                      disabled={!connected}
+                      className={`action-button ${isRecording ? 'secondary' : 'primary'}`}
+                    >
+                      {isRecording ? '🛑 End Voice Chat' : '🎤 Start Voice Chat'}
+                    </button>
+
+                    <button
+                      onClick={isScreenSharing ? stopScreenShare : startScreenShare}
+                      disabled={!connected}
+                      className={`action-button ${isScreenSharing ? 'secondary' : 'secondary'}`}
+                    >
+                      {isScreenSharing ? '📱 Stop Sharing' : '📺 Share Screen'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="media-panel">
+                  <h4 className="sidebar-title">🎬 Video Generation</h4>
+                  <div className="media-controls">
+                    <button
+                      onClick={generateVideo}
+                      disabled={!connected || videoGeneration.isGenerating || chatHistory.length === 0}
+                      className={`action-button ${videoGeneration.isGenerating ? 'secondary' : 'success'}`}
+                    >
+                      {videoGeneration.isGenerating ? '🎬 Generating...' : '🎬 Generate Video'}
+                    </button>
+                  </div>
+
+                  {videoGeneration.isGenerating && (
+                    <div className="video-generation-progress">
+                      <div className="progress-header">
+                        <span className="progress-title">Creating Educational Video</span>
+                        <span className="progress-percentage">{Math.round(videoGeneration.progress)}%</span>
+                      </div>
+                      <div className="progress-bar">
+                        <div 
+                          className="progress-fill" 
+                          style={{ width: `${videoGeneration.progress}%` }}
+                        ></div>
+                      </div>
+                      <div className="progress-status">
+                        {videoGeneration.status === 'generating-prompt' && 'Creating video prompt...'}
+                        {videoGeneration.status === 'generating-video' && 'Starting video generation...'}
+                        {videoGeneration.status === 'polling' && 'AI is creating your video...'}
+                        {videoGeneration.status === 'completed' && 'Finalizing video...'}
+                      </div>
+                    </div>
+                  )}
+
+                  {videoGeneration.error && (
+                    <div className="error-message">
+                      <div className="error-header">
+                        <span className="error-icon">❌</span>
+                        <span className="error-title">Video Generation Failed</span>
+                      </div>
+                      <div className="error-text">{videoGeneration.error}</div>
+                      <button 
+                        className="action-button primary"
+                        onClick={() => {
+                          resetVideoGeneration();
+                          generateVideo();
+                        }}
+                      >
+                        🔄 Try Again
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {isRecording && (
+                  <div className="volume-panel">
+                    <h4 className="sidebar-title">🔊 Voice Level</h4>
+                    <div className="volume-indicator">
+                      <div className="volume-bar">
+                        <div 
+                          className="volume-level" 
+                          style={{ width: `${volume * 100}%` }}
+                        ></div>
+                      </div>
+                      <span>Volume: {Math.round(volume * 100)}%</span>
+                    </div>
+                  </div>
+                )}
+
+                {videoGeneration.videoUrl && (
+                  <div className="video-panel">
+                    <div className="video-header">
+                      <h4 className="sidebar-title">🎬 Video Ready!</h4>
+                      <button 
+                        className="reset-video-btn"
+                        onClick={resetVideoGeneration}
+                        title="Generate new video"
+                      >
+                        🔄
+                      </button>
+                    </div>
+                    <div className="video-preview">
+                      <div className="video-thumbnail">
+                        <div className="play-icon">▶️</div>
+                        <span>Educational Video Generated</span>
+                      </div>
+                      <button 
+                        className="action-button success"
+                        onClick={() => setVideoGeneration(prev => ({ ...prev, showModal: true }))}
+                      >
+                        🎬 Watch Video
+                      </button>
+                    </div>
+                    <div className="video-actions">
+                      <a 
+                        href={videoGeneration.videoUrl} 
+                        download="educational-video.mp4"
+                        className="action-button secondary"
+                      >
+                        📥 Download
+                      </a>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="controls-section">
-          <div className="connection-panel">
-            <h4>🎤 Voice & Screen</h4>
-            <div className="connection-buttons">
-              <button
-                onClick={isRecording ? stopRecording : startRecording}
-                disabled={!connected}
-                className={`connect-btn ${isRecording ? 'recording' : ''}`}
-              >
-                {isRecording ? '🛑 End Voice Chat' : '🎤 Start Voice Chat'}
-              </button>
-
-              <button
-                onClick={isScreenSharing ? stopScreenShare : startScreenShare}
-                disabled={!connected}
-                className={`connect-btn ${isScreenSharing ? 'sharing' : ''}`}
-              >
-                {isScreenSharing ? '📱 Stop Sharing' : '📺 Share Screen'}
-              </button>
-            </div>
-          </div>
-
-          <div className="media-panel">
-            <h4>🎬 Video Generation</h4>
-            <div className="media-controls">
-              <button
-                onClick={generateVideo}
-                disabled={!connected || videoGeneration.isGenerating || chatHistory.length === 0}
-                className={`media-btn ${videoGeneration.isGenerating ? 'generating' : ''}`}
-              >
-                {videoGeneration.isGenerating ? '🎬 Generating...' : '🎬 Generate Video'}
-              </button>
-            </div>
-
-            {videoGeneration.isGenerating && (
-              <div className="video-generation-progress">
-                <div className="progress-header">
-                  <span className="progress-title">Creating Educational Video</span>
-                  <span className="progress-percentage">{Math.round(videoGeneration.progress)}%</span>
-                </div>
-                <div className="progress-bar">
-                  <div 
-                    className="progress-fill" 
-                    style={{ width: `${videoGeneration.progress}%` }}
-                  ></div>
-                </div>
-                <div className="progress-status">
-                  {videoGeneration.status === 'generating-prompt' && 'Creating video prompt...'}
-                  {videoGeneration.status === 'generating-video' && 'Starting video generation...'}
-                  {videoGeneration.status === 'polling' && 'AI is creating your video...'}
-                  {videoGeneration.status === 'completed' && 'Finalizing video...'}
-                </div>
-              </div>
-            )}
-
-            {videoGeneration.error && (
-              <div className="error-message">
-                <div className="error-header">
-                  <span className="error-icon">❌</span>
-                  <span className="error-title">Video Generation Failed</span>
-                </div>
-                <div className="error-text">{videoGeneration.error}</div>
-                <button 
-                  className="media-btn"
-                  onClick={() => {
-                    resetVideoGeneration();
-                    generateVideo();
-                  }}
-                >
-                  🔄 Try Again
-                </button>
-              </div>
-            )}
-          </div>
-
-          {isRecording && (
-            <div className="volume-panel">
-              <h4>🔊 Voice Level</h4>
-              <div className="volume-indicator">
-                <div className="volume-bar">
-                  <div 
-                    className="volume-level" 
-                    style={{ width: `${volume * 100}%` }}
-                  ></div>
-                </div>
-                <span>Volume: {Math.round(volume * 100)}%</span>
-              </div>
-            </div>
-          )}
-
-          {videoGeneration.videoUrl && (
-            <div className="video-panel">
-              <div className="video-header">
-                <h4>🎬 Video Ready!</h4>
-                <button 
-                  className="reset-video-btn"
-                  onClick={resetVideoGeneration}
-                  title="Generate new video"
-                >
-                  🔄
-                </button>
-              </div>
-              <div className="video-preview">
-                <div className="video-thumbnail">
-                  <div className="play-icon">▶️</div>
-                  <span>Educational Video Generated</span>
-                </div>
-                <button 
-                  className="watch-video-btn"
-                  onClick={() => setVideoGeneration(prev => ({ ...prev, showModal: true }))}
-                >
-                  🎬 Watch Video
-                </button>
-              </div>
-              <div className="video-actions">
-                <a 
-                  href={videoGeneration.videoUrl} 
-                  download="educational-video.mp4"
-                  className="download-btn"
-                >
-                  📥 Download
-                </a>
-              </div>
-            </div>
-          )}
         </div>
 
         <video 

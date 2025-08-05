@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import AgentHeader from './components/AgentHeader';
 import './ExamEvaluator.css';
 
 function ExamEvaluator({ onBackToHome }) {
-  const apiBaseUrl = 'http://localhost:8080/api/worksheet';
+  const apiBaseUrl = 'https://sahayak-backend-199913799544.us-central1.run.app/api/worksheet';
   
   // Tab state
   const [activeTab, setActiveTab] = useState('worksheet');
@@ -198,10 +199,13 @@ function ExamEvaluator({ onBackToHome }) {
 
   return (
     <div className="exam-evaluator">
-      <header className="exam-evaluator-header">
-        <button className="back-button" onClick={handleBack}>← Back</button>
-        <h1>📊 Exam Evaluator</h1>
-      </header>
+      <AgentHeader
+        agentName="Exam Evaluator"
+        agentDescription="Evaluate Worksheets and Answer Sheets with AI"
+        agentIcon="📊"
+        onBackToHome={onBackToHome}
+        backButtonText="← Back to Home"
+      />
 
       <main className="exam-evaluator-main">
         {/* Tab Navigation */}
@@ -232,115 +236,147 @@ function ExamEvaluator({ onBackToHome }) {
         {activeTab === 'worksheet' && (
           <div className="eval-form-container">
             <form onSubmit={handleSubmit}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="studentName">Student Name</label>
-                  <input
-                    type="text"
-                    id="studentName"
-                    value={studentName}
-                    onChange={(e) => setStudentName(e.target.value)}
-                    placeholder="e.g., John Doe"
-                    required
-                  />
+              <div className="form-section">
+                <div className="section-title">
+                  👤 Student Information
                 </div>
-
-                <div className="form-group">
-                  <label htmlFor="studentId">Student ID</label>
-                  <input
-                    type="text"
-                    id="studentId"
-                    value={studentId}
-                    onChange={(e) => setStudentId(e.target.value)}
-                    placeholder="e.g., STU001"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="subject">Subject</label>
-                  <input
-                    type="text"
-                    id="subject"
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    placeholder="e.g., Mathematics, Science, History"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="worksheetTitle">Worksheet Title</label>
-                  <input
-                    type="text"
-                    id="worksheetTitle"
-                    value={worksheetTitle}
-                    onChange={(e) => setWorksheetTitle(e.target.value)}
-                    placeholder="e.g., Algebra Practice Sheet"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="evaluationCriteria">Evaluation Criteria</label>
-                <select
-                  id="evaluationCriteria"
-                  value={evaluationCriteria}
-                  onChange={(e) => setEvaluationCriteria(e.target.value)}
-                  required
-                >
-                  <option value="strict">Strict</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="lenient">Lenient</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="additionalInstructions">Additional Instructions</label>
-                <textarea
-                  id="additionalInstructions"
-                  value={additionalInstructions}
-                  onChange={(e) => setAdditionalInstructions(e.target.value)}
-                  placeholder="e.g., Consider partial marks for methodology even if final answer is wrong"
-                  rows="3"
-                ></textarea>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="teacherNotes">Teacher Notes</label>
-                <textarea
-                  id="teacherNotes"
-                  value={teacherNotes}
-                  onChange={(e) => setTeacherNotes(e.target.value)}
-                  placeholder="e.g., Focus on problem-solving approach"
-                  rows="3"
-                ></textarea>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="fileUpload">Upload Worksheet (PDF or Image)</label>
-                <input
-                  type="file"
-                  id="fileUpload"
-                  accept=".pdf,.jpg,.jpeg,.png,.gif"
-                  onChange={handleFileChange}
-                  required
-                />
-                {uploadedFile && (
-                  <div className="file-info">
-                    <p>Selected file: {uploadedFile.name}</p>
-                    <button 
-                      type="button" 
-                      className="remove-file" 
-                      onClick={() => setUploadedFile(null)}
-                    >
-                      Remove
-                    </button>
+                <div className="form-row">
+                  <div className="form-group compact">
+                    <label htmlFor="studentName">Student Name</label>
+                    <input
+                      type="text"
+                      id="studentName"
+                      value={studentName}
+                      onChange={(e) => setStudentName(e.target.value)}
+                      placeholder="John Doe"
+                      required
+                    />
                   </div>
-                )}
+
+                  <div className="form-group compact">
+                    <label htmlFor="studentId">Student ID</label>
+                    <input
+                      type="text"
+                      id="studentId"
+                      value={studentId}
+                      onChange={(e) => setStudentId(e.target.value)}
+                      placeholder="STU001"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group compact">
+                    <label htmlFor="subject">Subject</label>
+                    <input
+                      type="text"
+                      id="subject"
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      placeholder="Mathematics, Science, History"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group compact">
+                    <label htmlFor="worksheetTitle">Worksheet Title</label>
+                    <input
+                      type="text"
+                      id="worksheetTitle"
+                      value={worksheetTitle}
+                      onChange={(e) => setWorksheetTitle(e.target.value)}
+                      placeholder="Algebra Practice Sheet"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-section">
+                <div className="section-title">
+                  ⚙️ Evaluation Settings
+                </div>
+                <div className="form-row single">
+                  <div className="form-group compact">
+                    <label htmlFor="evaluationCriteria">Evaluation Criteria</label>
+                    <select
+                      id="evaluationCriteria"
+                      value={evaluationCriteria}
+                      onChange={(e) => setEvaluationCriteria(e.target.value)}
+                      required
+                    >
+                      <option value="strict">Strict</option>
+                      <option value="moderate">Moderate</option>
+                      <option value="lenient">Lenient</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="additionalInstructions">Additional Instructions</label>
+                    <textarea
+                      id="additionalInstructions"
+                      value={additionalInstructions}
+                      onChange={(e) => setAdditionalInstructions(e.target.value)}
+                      placeholder="Consider partial marks for methodology..."
+                    ></textarea>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="teacherNotes">Teacher Notes</label>
+                    <textarea
+                      id="teacherNotes"
+                      value={teacherNotes}
+                      onChange={(e) => setTeacherNotes(e.target.value)}
+                      placeholder="Focus on problem-solving approach..."
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-section">
+                <div className="section-title">
+                  📄 File Upload
+                </div>
+                <div className="form-row single">
+                  <div className="form-group">
+                    <label htmlFor="fileUpload">Upload Worksheet</label>
+                    <div className={`file-upload-area ${uploadedFile ? 'has-file' : ''}`}>
+                      <input
+                        type="file"
+                        id="fileUpload"
+                        className="file-upload-input"
+                        accept=".pdf,.jpg,.jpeg,.png,.gif"
+                        onChange={handleFileChange}
+                        required
+                      />
+                      <div className="file-upload-content">
+                        <div className="file-upload-icon">📎</div>
+                        <div className="file-upload-text">
+                          {uploadedFile ? 'File Selected' : 'Click to upload or drag and drop'}
+                        </div>
+                        <div className="file-upload-hint">PDF, JPG, PNG, GIF (Max 10MB)</div>
+                      </div>
+                    </div>
+                    {uploadedFile && (
+                      <div className="file-info">
+                        <div className="file-info-content">
+                          <div className="file-info-icon">✅</div>
+                          <p>{uploadedFile.name}</p>
+                        </div>
+                        <button 
+                          type="button" 
+                          className="remove-file" 
+                          onClick={() => setUploadedFile(null)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="form-actions">
@@ -349,7 +385,7 @@ function ExamEvaluator({ onBackToHome }) {
                   className="evaluate-button"
                   disabled={loading}
                 >
-                  {loading ? 'Evaluating...' : 'Evaluate'}
+                  {loading ? 'Evaluating...' : 'Evaluate Worksheet'}
                 </button>
               </div>
             </form>
@@ -360,138 +396,183 @@ function ExamEvaluator({ onBackToHome }) {
         {activeTab === 'quesans' && (
           <div className="eval-form-container">
             <form onSubmit={handleQuesAnsSubmit}>
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="tab2StudentName">Student Name</label>
-                  <input
-                    type="text"
-                    id="tab2StudentName"
-                    value={tab2StudentName}
-                    onChange={(e) => setTab2StudentName(e.target.value)}
-                    placeholder="e.g., Jane Smith"
-                    required
-                  />
+              <div className="form-section">
+                <div className="section-title">
+                  👤 Student Information
                 </div>
-
-                <div className="form-group">
-                  <label htmlFor="tab2StudentId">Student ID</label>
-                  <input
-                    type="text"
-                    id="tab2StudentId"
-                    value={tab2StudentId}
-                    onChange={(e) => setTab2StudentId(e.target.value)}
-                    placeholder="e.g., STU12345"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="tab2Subject">Subject</label>
-                  <input
-                    type="text"
-                    id="tab2Subject"
-                    value={tab2Subject}
-                    onChange={(e) => setTab2Subject(e.target.value)}
-                    placeholder="e.g., Science"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="tab2ExamTitle">Exam Title</label>
-                  <input
-                    type="text"
-                    id="tab2ExamTitle"
-                    value={tab2ExamTitle}
-                    onChange={(e) => setTab2ExamTitle(e.target.value)}
-                    placeholder="e.g., Science Mid-term Exam"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="tab2EvaluationCriteria">Evaluation Criteria</label>
-                <select
-                  id="tab2EvaluationCriteria"
-                  value={tab2EvaluationCriteria}
-                  onChange={(e) => setTab2EvaluationCriteria(e.target.value)}
-                  required
-                >
-                  <option value="strict">Strict</option>
-                  <option value="moderate">Moderate</option>
-                  <option value="lenient">Lenient</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="tab2AdditionalInstructions">Additional Instructions</label>
-                <textarea
-                  id="tab2AdditionalInstructions"
-                  value={tab2AdditionalInstructions}
-                  onChange={(e) => setTab2AdditionalInstructions(e.target.value)}
-                  placeholder="e.g., Focus on conceptual understanding and proper use of formulas"
-                  rows="3"
-                ></textarea>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="tab2TeacherNotes">Teacher Notes</label>
-                <textarea
-                  id="tab2TeacherNotes"
-                  value={tab2TeacherNotes}
-                  onChange={(e) => setTab2TeacherNotes(e.target.value)}
-                  placeholder="e.g., Student has been struggling with force diagrams but shows good understanding of energy concepts"
-                  rows="3"
-                ></textarea>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="questionPaperUpload">Upload Question Paper (PDF)</label>
-                <input
-                  type="file"
-                  id="questionPaperUpload"
-                  accept=".pdf"
-                  onChange={handleQuestionPaperChange}
-                  required
-                />
-                {questionPaper && (
-                  <div className="file-info">
-                    <p>Selected file: {questionPaper.name}</p>
-                    <button 
-                      type="button" 
-                      className="remove-file" 
-                      onClick={() => setQuestionPaper(null)}
-                    >
-                      Remove
-                    </button>
+                <div className="form-row">
+                  <div className="form-group compact">
+                    <label htmlFor="tab2StudentName">Student Name</label>
+                    <input
+                      type="text"
+                      id="tab2StudentName"
+                      value={tab2StudentName}
+                      onChange={(e) => setTab2StudentName(e.target.value)}
+                      placeholder="Jane Smith"
+                      required
+                    />
                   </div>
-                )}
+
+                  <div className="form-group compact">
+                    <label htmlFor="tab2StudentId">Student ID</label>
+                    <input
+                      type="text"
+                      id="tab2StudentId"
+                      value={tab2StudentId}
+                      onChange={(e) => setTab2StudentId(e.target.value)}
+                      placeholder="STU12345"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group compact">
+                    <label htmlFor="tab2Subject">Subject</label>
+                    <input
+                      type="text"
+                      id="tab2Subject"
+                      value={tab2Subject}
+                      onChange={(e) => setTab2Subject(e.target.value)}
+                      placeholder="Science, Mathematics, History"
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group compact">
+                    <label htmlFor="tab2ExamTitle">Exam Title</label>
+                    <input
+                      type="text"
+                      id="tab2ExamTitle"
+                      value={tab2ExamTitle}
+                      onChange={(e) => setTab2ExamTitle(e.target.value)}
+                      placeholder="Science Mid-term Exam"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="answerSheetUpload">Upload Answer Sheet (PDF)</label>
-                <input
-                  type="file"
-                  id="answerSheetUpload"
-                  accept=".pdf"
-                  onChange={handleAnswerSheetChange}
-                  required
-                />
-                {answerSheet && (
-                  <div className="file-info">
-                    <p>Selected file: {answerSheet.name}</p>
-                    <button 
-                      type="button" 
-                      className="remove-file" 
-                      onClick={() => setAnswerSheet(null)}
+              <div className="form-section">
+                <div className="section-title">
+                  ⚙️ Evaluation Settings
+                </div>
+                <div className="form-row single">
+                  <div className="form-group compact">
+                    <label htmlFor="tab2EvaluationCriteria">Evaluation Criteria</label>
+                    <select
+                      id="tab2EvaluationCriteria"
+                      value={tab2EvaluationCriteria}
+                      onChange={(e) => setTab2EvaluationCriteria(e.target.value)}
+                      required
                     >
-                      Remove
-                    </button>
+                      <option value="strict">Strict</option>
+                      <option value="moderate">Moderate</option>
+                      <option value="lenient">Lenient</option>
+                    </select>
                   </div>
-                )}
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="tab2AdditionalInstructions">Additional Instructions</label>
+                    <textarea
+                      id="tab2AdditionalInstructions"
+                      value={tab2AdditionalInstructions}
+                      onChange={(e) => setTab2AdditionalInstructions(e.target.value)}
+                      placeholder="Focus on conceptual understanding..."
+                    ></textarea>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="tab2TeacherNotes">Teacher Notes</label>
+                    <textarea
+                      id="tab2TeacherNotes"
+                      value={tab2TeacherNotes}
+                      onChange={(e) => setTab2TeacherNotes(e.target.value)}
+                      placeholder="Student strengths and areas to focus on..."
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-section">
+                <div className="section-title">
+                  📄 File Uploads
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="questionPaperUpload">Question Paper</label>
+                    <div className={`file-upload-area ${questionPaper ? 'has-file' : ''}`}>
+                      <input
+                        type="file"
+                        id="questionPaperUpload"
+                        className="file-upload-input"
+                        accept=".pdf"
+                        onChange={handleQuestionPaperChange}
+                        required
+                      />
+                      <div className="file-upload-content">
+                        <div className="file-upload-icon">📋</div>
+                        <div className="file-upload-text">
+                          {questionPaper ? 'Question Paper Selected' : 'Upload Question Paper'}
+                        </div>
+                        <div className="file-upload-hint">PDF only (Max 10MB)</div>
+                      </div>
+                    </div>
+                    {questionPaper && (
+                      <div className="file-info">
+                        <div className="file-info-content">
+                          <div className="file-info-icon">✅</div>
+                          <p>{questionPaper.name}</p>
+                        </div>
+                        <button 
+                          type="button" 
+                          className="remove-file" 
+                          onClick={() => setQuestionPaper(null)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="answerSheetUpload">Answer Sheet</label>
+                    <div className={`file-upload-area ${answerSheet ? 'has-file' : ''}`}>
+                      <input
+                        type="file"
+                        id="answerSheetUpload"
+                        className="file-upload-input"
+                        accept=".pdf"
+                        onChange={handleAnswerSheetChange}
+                        required
+                      />
+                      <div className="file-upload-content">
+                        <div className="file-upload-icon">📝</div>
+                        <div className="file-upload-text">
+                          {answerSheet ? 'Answer Sheet Selected' : 'Upload Answer Sheet'}
+                        </div>
+                        <div className="file-upload-hint">PDF only (Max 10MB)</div>
+                      </div>
+                    </div>
+                    {answerSheet && (
+                      <div className="file-info">
+                        <div className="file-info-content">
+                          <div className="file-info-icon">✅</div>
+                          <p>{answerSheet.name}</p>
+                        </div>
+                        <button 
+                          type="button" 
+                          className="remove-file" 
+                          onClick={() => setAnswerSheet(null)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="form-actions">

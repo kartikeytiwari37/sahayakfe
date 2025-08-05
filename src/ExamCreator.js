@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import AgentHeader from './components/AgentHeader';
 import './ExamCreator.css';
 import { generateExamPDF } from './PdfGenerator';
 import { getExamTypeFromResponse, ExamResult } from './ResponseGenerator';
@@ -6,7 +7,7 @@ import { getExamTypeFromResponse, ExamResult } from './ResponseGenerator';
 function ExamCreator({ onBackToHome }) {
   // This function would be better implemented with proper routing
   // For now, we'll use a simple approach to navigate back
-  const apiBaseUrl = 'http://localhost:8080/api/exam';
+  const apiBaseUrl = 'https://sahayak-backend-199913799544.us-central1.run.app/api/exam';
   const [prompt, setPrompt] = useState('');
   const [subject, setSubject] = useState('');
   const [grade, setGrade] = useState('');
@@ -212,10 +213,13 @@ function ExamCreator({ onBackToHome }) {
 
   return (
     <div className="exam-creator">
-      <header className="exam-creator-header">
-        <button className="back-button" onClick={handleBack}>← Back</button>
-        <h1>🎓 Exam Creator</h1>
-      </header>
+      <AgentHeader
+        agentName="Exam Creator"
+        agentDescription="Create Custom Exams with AI"
+        agentIcon="🎓"
+        onBackToHome={onBackToHome}
+        backButtonText="← Back to Home"
+      />
 
       <main className="exam-creator-main">
         <div className="exam-form-container">

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import AgentHeader from './AgentHeader';
 import './UdaanSession.css';
 
 function UdaanSession({ generatedPrompt, onBackToHome }) {
@@ -40,7 +41,7 @@ function UdaanSession({ generatedPrompt, onBackToHome }) {
       setCurrentStatus('Generating beautiful HTML plan...');
 
       // Call the future planner API
-      const response = await fetch('http://localhost:8080/api/sahayak/future-plan/generate', {
+      const response = await fetch('https://sahayak-backend-199913799544.us-central1.run.app/api/sahayak/future-plan/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -103,18 +104,13 @@ function UdaanSession({ generatedPrompt, onBackToHome }) {
 
   return (
     <div className="udaan-session">
-      <div className="session-header">
-        <div className="session-info">
-          <div className="session-avatar">🚀</div>
-          <div className="session-details">
-            <h2>Udaan Future Plan</h2>
-            <p>Creating Inspiring Career Roadmap</p>
-          </div>
-        </div>
-        <button className="back-to-home-btn" onClick={onBackToHome}>
-          ← Back to Home
-        </button>
-      </div>
+      <AgentHeader
+        agentName="Udaan Future Plan"
+        agentDescription="Creating Inspiring Career Roadmap"
+        agentIcon="🚀"
+        onBackToHome={onBackToHome}
+        backButtonText="← Back to Home"
+      />
 
       <div className="session-content">
         {isGenerating && (

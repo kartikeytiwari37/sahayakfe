@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import SockJS from 'sockjs-client';
+import AgentHeader from './AgentHeader';
 import './Udaan.css';
 
 function Udaan({ onBackToHome, onStartUdaanSession }) {
@@ -15,6 +16,7 @@ function Udaan({ onBackToHome, onStartUdaanSession }) {
   const [promptTimeout, setPromptTimeout] = useState(null); // Timeout for prompt completion
 
   const promptSocketRef = useRef(null);
+  const chatMessagesRef = useRef(null);
 
   useEffect(() => {
     // Add initial welcome message
@@ -36,7 +38,7 @@ function Udaan({ onBackToHome, onStartUdaanSession }) {
     setPromptCreatorConnecting(true);
     try {
       // Connect to WebSocket with special parameter to indicate prompt creator mode
-      const socket = new SockJS('http://localhost:8080/sahayak-teacher');
+      const socket = new SockJS('https://sahayak-backend-199913799544.us-central1.run.app/sahayak-teacher');
       
       socket.onopen = () => {
         console.log('Connected to Udaan Prompt Creator WebSocket');
@@ -187,6 +189,13 @@ function Udaan({ onBackToHome, onStartUdaanSession }) {
                   });
                 }
                 
+                // Auto-scroll to bottom when assistant message is updated
+                setTimeout(() => {
+                  if (chatMessagesRef.current) {
+                    chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+                  }
+                }, 50);
+                
                 return messages;
               });
             }
@@ -213,6 +222,13 @@ function Udaan({ onBackToHome, onStartUdaanSession }) {
       timestamp: new Date().toLocaleTimeString()
     };
     setPromptMessages(prev => [...prev, message]);
+    
+    // Auto-scroll to bottom when new message is added
+    setTimeout(() => {
+      if (chatMessagesRef.current) {
+        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+      }
+    }, 100);
   };
 
   const sendPromptMessage = () => {
@@ -263,130 +279,150 @@ function Udaan({ onBackToHome, onStartUdaanSession }) {
 
   return (
     <div className="udaan">
-      <div className="udaan-header">
-        <div className="udaan-info">
-          <div className="udaan-avatar">🚀</div>
-          <div className="udaan-details">
-            <h2>Udaan - Future Planner</h2>
-            <p>Creating Inspiring Career Roadmaps</p>
-          </div>
-        </div>
-        <button className="back-to-home-btn" onClick={onBackToHome}>
-          ← Back to Home
-        </button>
-      </div>
+      <AgentHeader
+        agentName="Udaan - Future Planner"
+        agentDescription="Creating Inspiring Career Roadmaps"
+        agentIcon="🚀"
+        onBackToHome={onBackToHome}
+        backButtonText="← Back to Home"
+      />
 
       <div className="udaan-content">
-        <div className="prompt-creator-single">
-          <div className="prompt-header">
-            <h3>🎯 Tell Me About The Student</h3>
-            <p>Share the student's name, age, location, and career dreams. I'll create an inspiring future roadmap!</p>
-          </div>
-
-          <div className="form-group">
-            <label>Step Progress</label>
-            <div className="subject-tags">
-              <div className={`subject-tag ${currentStep === 'input' ? 'selected' : currentStep === 'generating' || currentStep === 'ready' ? 'selected' : ''}`}>
-                1. Student Info
+        <div className="content-wrapper">
+          {/* Progress Section */}
+          <div className="progress-section">
+            <h3 className="section-title">Step Progress</h3>
+            <div className="progress-steps">
+              <div className={`progress-step ${currentStep === 'input' || currentStep === 'generating' || currentStep === 'ready' ? 'active' : ''}`}>
+                <div className="step-number">1</div>
+                <span>Student Info</span>
               </div>
-              <div className={`subject-tag ${currentStep === 'generating' ? 'selected' : currentStep === 'ready' ? 'selected' : ''}`}>
-                2. Generate Plan
+              <div className={`progress-step ${currentStep === 'generating' || currentStep === 'ready' ? 'active' : ''}`}>
+                <div className="step-number">2</div>
+                <span>Generate Plan</span>
               </div>
-              <div className={`subject-tag ${currentStep === 'ready' ? 'selected' : ''}`}>
-                3. Ready
+              <div className={`progress-step ${currentStep === 'ready' ? 'active' : ''}`}>
+                <div className="step-number">3</div>
+                <span>Ready</span>
               </div>
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Chat with Udaan</label>
-            <div className="prompt-display">
-              {promptMessages.map(message => (
-                <div key={message.id} className={`message-item ${message.type}`}>
-                  <div className="message-header">
-                    <strong>
-                      {message.type === 'teacher' ? 'You' : 
-                       message.type === 'assistant' ? 'Udaan' : 
-                       message.type === 'system' ? 'System' : 'Error'}:
-                    </strong>
-                    <span className="message-time">{message.timestamp}</span>
-                  </div>
-                  <div className="message-text">{message.content}</div>
+          {/* Main Content Grid */}
+          <div className="main-content-grid">
+            {/* Chat Section */}
+            <div className="chat-section">
+              <div className="chat-header">
+                <h3>💬 Chat with Udaan</h3>
+                <div className="connection-status">
+                  <div className={`status-dot ${promptCreatorConnected ? 'connected' : 'disconnected'}`}></div>
+                  <span>{promptCreatorConnected ? 'Connected' : promptCreatorConnecting ? 'Connecting...' : 'Disconnected'}</span>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Your Message</label>
-            <div className="input-group">
-              <input
-                type="text"
-                value={promptInput}
-                onChange={(e) => setPromptInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendPromptMessage()}
-                placeholder="Tell me about the student: name, age, location, and career goal..."
-                disabled={!promptCreatorConnected}
-              />
-              <button 
-                onClick={sendPromptMessage} 
-                disabled={!promptCreatorConnected || !promptInput.trim()}
-                className="send-btn"
-              >
-                Send
-              </button>
-            </div>
-          </div>
-
-          {currentStep === 'input' && (
-            <div className="form-group">
-              <label>💡 Example Student Profiles</label>
-              <div className="examples-grid">
-                {exampleRequests.map((example, index) => (
-                  <div 
-                    key={index} 
-                    className="example-card"
-                    onClick={() => setPromptInput(example)}
-                  >
-                    {example}
+              </div>
+              
+              <div className="chat-messages" ref={chatMessagesRef}>
+                {promptMessages.map(message => (
+                  <div key={message.id} className={`chat-message ${message.type === 'teacher' ? 'user' : message.type}`}>
+                    <div className="message-avatar">
+                      {message.type === 'teacher' ? '👤' : 
+                       message.type === 'assistant' ? '🚀' : 
+                       message.type === 'system' ? '⚙️' : '❌'}
+                    </div>
+                    <div className="message-content">
+                      <div className="message-sender">
+                        {message.type === 'teacher' ? 'You' : 
+                         message.type === 'assistant' ? 'Udaan' : 
+                         message.type === 'system' ? 'System' : 'Error'}
+                        <span className="message-timestamp">{message.timestamp}</span>
+                      </div>
+                      <div className="message-text">{message.content}</div>
+                    </div>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
 
-          <div className="form-actions">
-            {!promptCreatorConnected && (
-              <button 
-                className="generate-btn"
-                onClick={connectToPromptCreator}
-                disabled={promptCreatorConnecting}
-              >
-                {promptCreatorConnecting ? 'Connecting...' : 'Connect to Udaan'}
-              </button>
-            )}
-            
-            {isPromptReady && (
-              <>
-                <button 
-                  className="start-session-btn"
-                  onClick={handleStartUdaanSession}
-                >
-                  🎓 Generate Future Plan
-                </button>
-                <button 
-                  className="generate-btn"
-                  onClick={() => {
-                    setIsPromptReady(false);
-                    setCurrentStep('input');
-                    setGeneratedPrompt('');
-                    addPromptMessage('system', 'Let\'s create another student\'s future roadmap. Tell me about them!');
-                  }}
-                >
-                  ✏️ Plan for Another Student
-                </button>
-              </>
-            )}
+              <div className="chat-input-section">
+                <div className="chat-input-wrapper">
+                  <input
+                    type="text"
+                    value={promptInput}
+                    onChange={(e) => setPromptInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && sendPromptMessage()}
+                    placeholder="Tell me about the student: name, age, location, and career goal..."
+                    disabled={!promptCreatorConnected}
+                    className="chat-input"
+                  />
+                  <button 
+                    onClick={sendPromptMessage} 
+                    disabled={!promptCreatorConnected || !promptInput.trim()}
+                    className="send-button"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M2 21L23 12L2 3V10L17 12L2 14V21Z" fill="currentColor"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar Section */}
+            <div className="sidebar-section">
+              {currentStep === 'input' && (
+                <div className="examples-section">
+                  <h4 className="sidebar-title">💡 Example Student Profiles</h4>
+                  <div className="examples-list">
+                    {exampleRequests.map((example, index) => (
+                      <div 
+                        key={index} 
+                        className="example-item"
+                        onClick={() => setPromptInput(example)}
+                      >
+                        <div className="example-icon">👤</div>
+                        <div className="example-text">{example}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!promptCreatorConnected || isPromptReady && 
+                <div className="actions-section">
+                  <div className="ready-actions">
+                    {!promptCreatorConnected && (
+                      <button 
+                        className="action-button primary"
+                        onClick={connectToPromptCreator}
+                        disabled={promptCreatorConnecting}
+                      >
+                        {promptCreatorConnecting ? 'Connecting...' : 'Connect to Udaan'}
+                      </button>
+                    )}
+                    
+                    {isPromptReady && (
+                      <>
+                        <button 
+                          className="action-button success"
+                          onClick={handleStartUdaanSession}
+                        >
+                          🎓 Generate Future Plan
+                        </button>
+                        <button 
+                          className="action-button secondary"
+                          onClick={() => {
+                            setIsPromptReady(false);
+                            setCurrentStep('input');
+                            setGeneratedPrompt('');
+                            addPromptMessage('system', 'Let\'s create another student\'s future roadmap. Tell me about them!');
+                          }}
+                        >
+                          ✏️ Plan for Another Student
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              }
+            </div>
           </div>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import SockJS from 'sockjs-client';
 import HomePage from './components/HomePage';
 import KalamSir from './components/KalamSir';
