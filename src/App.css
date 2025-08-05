@@ -198,7 +198,6 @@ body {
 .message-content {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
 }
 
 .message-content strong {

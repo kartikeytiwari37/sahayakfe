@@ -119,6 +119,64 @@ const Hero = () => {
           </div>
         </div>
       </div>
+      
+      {/* Mathematical Design Element */}
+      <div className="hero-math-design">
+        <svg width="100%" height="35" viewBox="0 0 1200 35" fill="none" preserveAspectRatio="none">
+          {/* Mathematical symbols with more spacing */}
+          <text x="80" y="22" fill="#7209B7" fontSize="16" fontFamily="serif" opacity="0.7">∫</text>
+          <text x="100" y="26" fill="#E91E63" fontSize="12" fontFamily="serif" opacity="0.6">dx</text>
+          
+          <text x="180" y="22" fill="#2D1B69" fontSize="16" fontFamily="serif" opacity="0.7">π</text>
+          <text x="200" y="16" fill="#7209B7" fontSize="10" fontFamily="serif" opacity="0.5">r²</text>
+          
+          <text x="280" y="22" fill="#E91E63" fontSize="16" fontFamily="serif" opacity="0.7">Σ</text>
+          <text x="300" y="26" fill="#2D1B69" fontSize="9" fontFamily="serif" opacity="0.5">n=1</text>
+          <text x="300" y="14" fill="#7209B7" fontSize="9" fontFamily="serif" opacity="0.5">∞</text>
+          
+          <text x="380" y="22" fill="#7209B7" fontSize="16" fontFamily="serif" opacity="0.7">√</text>
+          <line x1="395" y1="16" x2="415" y2="16" stroke="#E91E63" strokeWidth="1" opacity="0.6"/>
+          <text x="400" y="26" fill="#2D1B69" fontSize="12" fontFamily="serif" opacity="0.6">x</text>
+          
+          <text x="480" y="22" fill="#E91E63" fontSize="16" fontFamily="serif" opacity="0.7">α</text>
+          <text x="510" y="22" fill="#7209B7" fontSize="14" fontFamily="serif" opacity="0.6">β</text>
+          
+          <text x="580" y="22" fill="#2D1B69" fontSize="16" fontFamily="serif" opacity="0.7">∞</text>
+          
+          <text x="680" y="22" fill="#7209B7" fontSize="16" fontFamily="serif" opacity="0.7">θ</text>
+          <text x="700" y="22" fill="#2D1B69" fontSize="12" fontFamily="serif" opacity="0.6">=</text>
+          <text x="715" y="22" fill="#E91E63" fontSize="12" fontFamily="serif" opacity="0.6">sin</text>
+          <text x="735" y="26" fill="#7209B7" fontSize="9" fontFamily="serif" opacity="0.5">-1</text>
+          
+          <text x="820" y="22" fill="#2D1B69" fontSize="16" fontFamily="serif" opacity="0.7">e</text>
+          <text x="835" y="16" fill="#7209B7" fontSize="9" fontFamily="serif" opacity="0.5">iπ</text>
+          <text x="850" y="22" fill="#E91E63" fontSize="12" fontFamily="serif" opacity="0.6">+1=0</text>
+          
+          <text x="950" y="22" fill="#E91E63" fontSize="14" fontFamily="serif" opacity="0.7">sin</text>
+          <text x="980" y="22" fill="#7209B7" fontSize="14" fontFamily="serif" opacity="0.6">cos</text>
+          
+          <text x="1080" y="22" fill="#7209B7" fontSize="16" fontFamily="serif" opacity="0.7">λ</text>
+          
+          {/* Simplified geometric accents */}
+          <circle cx="140" cy="17" r="2" fill="#7209B7" opacity="0.3"/>
+          <circle cx="240" cy="17" r="2" fill="#E91E63" opacity="0.3"/>
+          <circle cx="340" cy="17" r="2" fill="#2D1B69" opacity="0.3"/>
+          <circle cx="440" cy="17" r="2" fill="#7209B7" opacity="0.3"/>
+          <circle cx="540" cy="17" r="2" fill="#E91E63" opacity="0.3"/>
+          <circle cx="640" cy="17" r="2" fill="#2D1B69" opacity="0.3"/>
+          <circle cx="780" cy="17" r="2" fill="#7209B7" opacity="0.3"/>
+          <circle cx="910" cy="17" r="2" fill="#E91E63" opacity="0.3"/>
+          <circle cx="1040" cy="17" r="2" fill="#2D1B69" opacity="0.3"/>
+          
+          <defs>
+            <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#7209B7"/>
+              <stop offset="50%" stopColor="#E91E63"/>
+              <stop offset="100%" stopColor="#2D1B69"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
     </div>
   );
 };

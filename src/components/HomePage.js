@@ -3,6 +3,7 @@ import './HomePage.css';
 import Hero from './Hero';
 import AgentsSection from './AgentsSection';
 import FeaturesSection from './FeaturesSection';
+import AgentSectionTwo from './AgentSectionTwo';
 
 function HomePage({ onSelectAgent }) {
 
@@ -10,7 +11,7 @@ function HomePage({ onSelectAgent }) {
     <div className="homepage">
       <Hero />
 
-      <AgentsSection onSelectAgent={onSelectAgent} />
+      <AgentSectionTwo onSelectAgent={onSelectAgent} />
 
       <FeaturesSection />
 
